@@ -1,0 +1,15 @@
+Service handling functions
+---------------------------------------------------------------
+String getname()                   return name of service
+void setname(String serviceName)   set name of service
+int getinterval()                  return checking interval
+void setinterval(int interval)     set checking interval
+String getscript()                 return name of check script
+void setscript(String script)      set name of check script
+void delete()                      delete service
+
+EXAMPLE
+=======
+service = createservice("smtp")
+service.setscript("smtp.py")
+service.setinterval(30)

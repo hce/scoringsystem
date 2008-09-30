@@ -1,0 +1,25 @@
+Team handling functions
+
+class Team data functions
+-----------------------------------------------------------------
+String getname()                   get name of the team
+String gethost()                   get host of vuln team host
+void setname(String teamName)      set name of the team
+void sethost(String hostName)      set vuln hostname of the team
+void delete()                      delete team
+
+class Team Score functions
+-----------------------------------------------------------------
+int getop()                        get offensive points
+int getdp()                        get defensive points
+int getap()                        get adviosry points
+int gethp()                        get hacking points
+void setop(int offensivePoints)    set offensive points
+void setdp(int defensivePoints)    set defensive points
+void setap(int advisoryPoints)     set advisory points
+void sethp(int hackingPoints)      set hacking points
+
+EXAMPLE
+=======
+t = createteam("the foobars")
+t.sethost("www.foobar.com")

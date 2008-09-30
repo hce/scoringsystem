@@ -1,0 +1,41 @@
+THIS FILE shows a sample session with the scoring bot admin
+interface. Two services, mail and webserver, and two teams, the
+foobars and the darmstaedters are created in this example.
+
+hc.daedalus ~> telnet localhost 8080
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+Welcome, 127.0.0.1
+Welcome to the CTF scorebot 0.4.37
+-----------------------------------------------------------------
+type "man.reportflag", "man.reportadvisory", "man",
+  "copyright" or "license" for more information.
+scorebot > admin()
+Password: ...
+Login successful!
+scorebot # mail = createservice("mail")
+scorebot # mail.setinterval(300)
+scorebot # mail.setscript("mail_testscript.py")
+Name set
+scorebot # www = createservice("Webserver")
+scorebot # www.setinterval(180)
+scorebot # www.setscript("webserver_testscript.perl.sh")
+Name set
+scorebot # ls()
+ID	name	script	interval
+14	mail	mail_testscript.py	300
+15	Webserver	webserver_testscript.sh	180
+
+scorebot # t=createteam("the foobars")
+scorebot # t.sethost("192.168.1.1")
+scorebot # t=createteam("the darmstaedters")
+scorebot # t.sethost("192.168.1.2")
+scorebot # lt()
+ID	Team	off	def	adv	hak	host
+-----------------------------------------------------------------
+1	the fo	0	0  	0	0	192.168.1.1
+2 	the da 	0  	0	0	0	192.168.1.2
+
+scorebot # quit()
+bye!

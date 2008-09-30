@@ -1,0 +1,29 @@
+Scoring bot functions
+-----------------------------------------------------------------
+<b>boolean reportflag(int teamID, String flagString)</b>
+  Report a flag.
+    teamID:      ID of the reporting (your own) team
+    flagString:  ID of the flag
+<b>void reportadvisory(int teamID, String advisory)</b>
+  Report an advisory.
+    teamID:      ID of the reporting (your own) team
+    advisory:    Advisory description.
+
+Miscellaneous functions
+-----------------------------------------------------------------
+<b>void quit()</b>
+  Quit session
+<b>String readtext()</b>
+  Read multi-line text
+<b>bool admin(optional String password)</b>
+  Log in as admin. If password is omitted, you are prompted
+  interactively. This is the recommended method, as your typing
+  will be hidden. However, some telnet clients (i.e., netcat)
+  have trouble handling some control characters; in that case
+  you should specify the password directly.
+<b>void functions()</b>
+  List all available functions
+<b>void lt()</b>
+  List all teams
+<b>void dir()</b>
+  List all defined variables

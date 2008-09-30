@@ -1,0 +1,21 @@
+HC's scoringbot (C) 2007-2008, Hans-Christian Esperer.
+
+This program is free software; you may redistribute and/or modify
+it under the terms of the new BSD license. See LICENSE for
+details.
+
+You need Java 1.6, and a running postgresql8.1 or later server on
+localhost.
+
+To set the scoring bot up, invoke ./install.sh .
+
+Edit settings; change the admin password. The admin password is
+required when you telnet to localhost, port 8080. (See SETUP for
+details)
+
+Then, start ./scoringbot.sh . Connect to localhost with telnet to
+port 8080.  Place your testscripts in scripts/ . Make them
+executable. A sample is provided.
+
+See SETUP for details on how to create teams and services.
+

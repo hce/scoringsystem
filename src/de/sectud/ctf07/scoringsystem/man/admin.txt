@@ -1,0 +1,19 @@
+Admin functions
+-----------------------------------------------------------------
+void ladv()                           list all pending advisories
+void reject(int advisoryID, String comment)
+void accept(int advisoryID, int pointsToAward, String comment)
+void delete(int advisoryID)
+void inchp(int teamID, int pointsToAward)
+void dechp(int teamID, int pointsToTake)
+void lt()                             list all teams
+void ls()                             list all services
+Team createteam(String teamName)      create and return new team
+Team getteam(int teamID)              return team #teamID
+Service createservice(
+        String serviceName)           create and ret. new service
+Service getservice(int serviceID)     return service #serviceID
+
+Debugging/Benchmarking functions
+-----------------------------------------------------------------
+String genflags(int numFlags, String separator)  DO NOT USE

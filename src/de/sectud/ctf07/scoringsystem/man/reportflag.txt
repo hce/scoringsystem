@@ -1,0 +1,10 @@
+Flags are 32 byte values represented by 64 byte hex strings.
+
+The function to report flags is
+  <b>boolean reportflag(int teamID, string flagID)</b>
+Returns true if the flag was credited, otherwise false.
+
+If you are team #4 and you believe you found a flag, say,
+1337, you'd enter:
+  <b>reportflag(4, "1337")</b>
+done!

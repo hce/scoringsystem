@@ -1,0 +1,20 @@
+        <p>
+	  <a href="http://ctf.sec.informatik.tu-darmstadt.de/daopen08/lgnd.html">Legend</a>
+        </p>
+        <p>
+          <a href="rank.html">Team ranks</a>
+          -- 
+          <a href="status.html">Service states</a>
+          -- 
+          <a href="adv.html">Advisories</a>
+          -- 
+          <a href="pending.html">Pending advisories</a>
+        </p>
+        <hr />
+        <p>
+          <a href="http://ctf.hcesperer.org/gameserver/">HC's scorebot $Id: htmlfooter 125 2008-07-03 10:40:49Z hc $</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

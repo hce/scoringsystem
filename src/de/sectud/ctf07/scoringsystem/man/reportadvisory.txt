@@ -1,0 +1,29 @@
+Advisories must contain exact source line specifications (service
+name, filename, line number) or they cannot be processed. This rule is
+necessary because the moderators (probably) have not written the
+reported services themselves and need a way to verify the validity of
+your advisory.
+
+
+The function to report an advisory is
+  <b>boolean reportadvisory(int teamID, String advisory)</b>
+The function to read a multiline string is
+  <b>String readtext()</b>
+readtext() reads lines from stdin (in your case, the network connection)
+until it reads a line containing a single dot (^\.$).
+
+This is how I reported an advisory for team #7:
+(entered text is typeset bold)
+  scorebot> <b>reportadvisory(7, readtext())</b>
+  
+  Write some text, finish with a single dot on a separate line (^\.$)
+  <b>The tcsh is vunerable to a social engineering attack.
+  By getting an admin to open a root shell and than taking
+  a coffee break, you can break his computer by simple writing:
+  # rm -rf /*
+  Fix:
+  remove tcsh (and while you're at it, all other shells as well)
+  from your machines
+  .</b>
+  Your advisory has been reported.
+  scorebot>
