@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/usr/local/share/java/classes/postgresql.jar"/>
 	<classpathentry kind="lib" path="lib/adela.jar"/>
+	<classpathentry kind="lib" path="lib/postgresql.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
