@@ -81,9 +81,13 @@ public class ConnectionKiller extends Thread {
 
 	public boolean addHandler(ClientHandler handler) {
 		synchronized (treeMutex) {
-			if (tree.containsKey(handler.getIP())) {
-				return false;
-			} else if (tree.put(handler.getIP(), handler) != null) {
+			ClientHandler oldHandler = tree.get(handler.getIP());
+			if (oldHandler != null) {
+				new Thread(new SocketShutdowner(oldHandler)).start();
+				tree.remove(oldHandler.getIP());
+				numConnections--;
+			}
+			if (tree.put(handler.getIP(), handler) != null) {
 				return false;
 			}
 			numConnections++;
@@ -130,4 +134,15 @@ public class ConnectionKiller extends Thread {
 		}
 	}
 
+	class SocketShutdowner implements Runnable {
+		private ClientHandler ch;
+
+		public SocketShutdowner(ClientHandler ch) {
+			this.ch = ch;
+		}
+
+		public void run() {
+			this.ch.doStop();
+		}
+	}
 }

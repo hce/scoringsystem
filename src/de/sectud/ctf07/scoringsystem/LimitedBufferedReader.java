@@ -97,7 +97,7 @@ public class LimitedBufferedReader {
 			}
 			String s = new String(chars).substring(0, j);
 			if (logFile != null) {
-				logFile.print("C ");
+				logFile.printf("C%d ", s.length());
 				logFile.println(s);
 			}
 			return s;

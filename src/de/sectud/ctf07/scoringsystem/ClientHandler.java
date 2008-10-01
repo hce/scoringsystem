@@ -124,6 +124,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 			this.socket.setSoTimeout(60000);
 		} catch (SocketException e2) {
 			e2.printStackTrace();
+			return;
 		}
 		try {
 			this.logFile = new PrintStream("logs/" + "SESS_"
@@ -295,7 +296,11 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 		}
 
 		if (this.isAdmin) {
-			creationTime = Calendar.getInstance().getTimeInMillis() / 1000;
+			creationTime = (Calendar.getInstance().getTimeInMillis() / 1000) + 60000 * 30 /*
+																							 * 30
+																							 * minutes
+																							 * timeout
+																							 */;
 		}
 
 		try {
@@ -402,6 +407,14 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 							.getInstance());
 					this.evaluator.DeclareClassSafe(SQLConnection.class);
 					writer.println("Login successful!");
+					try {
+						this.socket.setSoTimeout(60000 * 10 /*
+															 * 10 minutes
+															 * timeout
+															 */);
+					} catch (SocketException e2) {
+						e2.printStackTrace();
+					}
 					return true;
 				}
 				isAdmin = false;
@@ -1040,8 +1053,16 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 		return string.toString();
 	}
 
-	private void doQuit() {
+	private boolean doQuit() {
 		dontQuit = false;
+		try {
+			this.socket.setSoTimeout(10);
+			this.socket.setSoLinger(false, 0);
+			this.socket.close();
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	private void showFunctions() {
@@ -1280,8 +1301,8 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 		return false;
 	}
 
-	public void doStop() {
-		dontQuit = false;
+	public boolean doStop() {
+		return doQuit();
 	}
 
 	public ComparableBA getIP() {
