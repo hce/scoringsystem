@@ -47,6 +47,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 import org.hcesperer.utils.DBConnection;
+import org.hcesperer.utils.djb.DJBSettings;
 
 /**
  * Scoring bot telnet interface. This class handles one client network
@@ -58,8 +59,22 @@ import org.hcesperer.utils.DBConnection;
  */
 public class FlagHandler {
 
+	private static void loadSlaves() {
+		String slaves = DJBSettings.loadText("control/slaves", "");
+		String[] slavelist;
+		if (slaves.trim().length() == 0) {
+			return;
+		}
+		slavelist = slaves.split("\n");
+		for (int i = 0; i < slavelist.length; i++) {
+			Executor.addHost(slavelist[i]);
+			System.out.printf("Added %s as testscript slave.\n", slavelist[i]);
+		}
+	}
+
 	public static void main(String[] args) throws ClassNotFoundException,
 			SQLException, FileNotFoundException, IOException {
+		loadSlaves();
 		while (true) {
 			Connection connection = DBConnection.getInstance().getDB();
 
@@ -78,7 +93,7 @@ public class FlagHandler {
 			rs = ps.executeQuery();
 			ArrayList<ServiceHandler> handlers = new ArrayList<ServiceHandler>(
 					20);
-            int startupDelay = 0;
+			int startupDelay = 0;
 			while (rs.next()) {
 				int sID = rs.getInt(1);
 				String name = rs.getString(2);
@@ -88,7 +103,7 @@ public class FlagHandler {
 				for (String team : teams) {
 					handlers.add(new ServiceHandler(sID, name, team, script,
 							type, interval, startupDelay));
-                    startupDelay += 1250;
+					startupDelay += 1250;
 				}
 			}
 			ps.close();

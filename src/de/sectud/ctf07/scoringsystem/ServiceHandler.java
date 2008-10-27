@@ -36,7 +36,6 @@
 
 package de.sectud.ctf07.scoringsystem;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -50,6 +49,7 @@ import java.util.Random;
 import org.hcesperer.utils.DBConnection;
 import org.hcesperer.utils.SQLConnection;
 
+import de.sectud.ctf07.scoringsystem.Executor.Action;
 import de.sectud.ctf07.scoringsystem.ReturnCode.ErrorValues;
 import de.sectud.ctf07.scoringsystem.ReturnCode.Success;
 
@@ -83,8 +83,6 @@ public class ServiceHandler implements Runnable {
 	private int interval;
 
 	private boolean noQuit = true;
-
-	private Runtime rt = Runtime.getRuntime();
 
 	private final String team;
 
@@ -165,38 +163,15 @@ public class ServiceHandler implements Runnable {
 					String flagIDID = flagIDFromFlag(flagID);
 					ReturnCode retCode = null;
 					String verboseMessage = "";
-					try {
-						Process p = rt.exec(String.format(
-								"scripts/%s store %s %s %s", script, teamHost,
-								flagIDID, flagID));
-						CompleteReader cr = new CompleteReader(p
-								.getInputStream());
-						int max = 0;
-						while (max++ < 60) {
-							try {
-								int retval = p.exitValue();
-								retCode = ReturnCode.fromOrdinal(retval);
-							} catch (IllegalThreadStateException e) {
-								Thread.sleep(1000);
-								retCode = RETCODE_TIMEOUT;
-							}
-						}
+					ServiceStatus ss = Executor.runTestscript(script,
+							Executor.Action.STORE, teamHost, flagIDID, flagID);
+					verboseMessage = ss.getStatusMessage();
+					retCode = ss.getReturnCode();
 
-						verboseMessage = cr.getReadData();
-
-						if (RETCODE_TIMEOUT.equals(retCode)) {
-							reportServiceStatus(this.team, this.name, retCode,
-									"");
-							try {
-								p.destroy();
-							} catch (Exception e) {
-								e.printStackTrace();
-							}
-						} else {
-							reportAsAcceptingIfCurrentlyNotRunning();
-						}
-					} catch (IOException e) {
-						e.printStackTrace();
+					if (RETCODE_TIMEOUT.equals(retCode)) {
+						reportServiceStatus(this.team, this.name, retCode, "");
+					} else {
+						reportAsAcceptingIfCurrentlyNotRunning();
 					}
 
 					printSREvent("=>", this.team, this.name, retCode,
@@ -387,37 +362,13 @@ public class ServiceHandler implements Runnable {
 			String errorMessage = "";
 			String flagIDID = flagIDFromFlag(flagID);
 			try {
-				Process p;
-				CompleteReader cr;
-				try {
-					p = rt.exec(String.format("scripts/%s retrieve %s %s %s",
-							script, teamHost, flagIDID, flagID));
-					cr = new CompleteReader(p.getInputStream());
-				} catch (Throwable t) {
-					System.err.println("Error! Test script " + "scripts/"
-							+ script + " can not be executed. Printing error.");
-					t.printStackTrace();
-					Thread.sleep(60000);
-					return;
-				}
-				int max = 0;
-				while (max++ < 60) {
-					try {
-						int retval = p.exitValue();
-						retCode = ReturnCode.fromOrdinal(retval);
-					} catch (IllegalThreadStateException e) {
-						Thread.sleep(1000);
-						retCode = RETCODE_TIMEOUT;
-					}
-				}
-				errorMessage = cr.getReadData();
+				ServiceStatus ss = Executor.runTestscript(script,
+						Action.RETRIEVE, teamHost, flagIDID, flagID);
+				retCode = ss.getReturnCode();
+				errorMessage = ss.getStatusMessage();
 				if (retCode == RETCODE_TIMEOUT) {
 					reportServiceStatus(teamID, this.name, retCode,
 							errorMessage);
-					try {
-						p.destroy();
-					} catch (Exception e) {
-					}
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();

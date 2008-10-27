@@ -1,7 +1,5 @@
 package de.sectud.ctf07.scoringsystem;
 
-import java.io.IOException;
-
 /**
  * Thrown when a subprocess could not be executed (be it a local or remote
  * subprocess)
@@ -12,7 +10,7 @@ import java.io.IOException;
  */
 public class ExecutionException extends Exception {
 
-	public ExecutionException(IOException e) {
+	public ExecutionException(Throwable e) {
 		super(e);
 	}
 

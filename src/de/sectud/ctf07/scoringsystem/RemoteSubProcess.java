@@ -185,11 +185,12 @@ public final class RemoteSubProcess implements SubProcess {
 	 */
 	public static void main(String[] args) throws UnknownHostException,
 			IOException, ExecutionException {
-		RemoteSubProcess rsp = new RemoteSubProcess("localhost", 60000);
+		RemoteSubProcess rsp = new RemoteSubProcess("salato.hcesperer.org",
+				60000);
 		System.out.println(rsp.checkonly());
-		rsp = new RemoteSubProcess("localhost", 60000);
+		rsp = new RemoteSubProcess("salato.hcesperer.org", 60000);
 		System.out.println(rsp.check());
-		ServiceStatus ss = rsp.runTestscript("ping.py store localhost foo bar");
+		ServiceStatus ss = rsp.runTestscript("ping.py store 130.83.160.1 foo bar");
 		System.out.println(ss.getReturnCode().toString());
 		System.out.println(ss.getStatusMessage());
 	}
