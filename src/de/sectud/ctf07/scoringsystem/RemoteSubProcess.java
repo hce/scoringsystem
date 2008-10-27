@@ -172,6 +172,10 @@ public final class RemoteSubProcess implements SubProcess {
 		}
 		String statusMessage = msgs[2];
 		ReturnCode returnCode = ReturnCode.fromOrdinal(retVal);
+		try {
+			this.s.close();
+		} catch (IOException e) {
+		}
 		return new ServiceStatus(returnCode, statusMessage, hostNR);
 	}
 
