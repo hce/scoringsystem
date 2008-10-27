@@ -70,6 +70,7 @@ public class FlagHandler {
 			Executor.addHost(slavelist[i]);
 			System.out.printf("Added %s as testscript slave.\n", slavelist[i]);
 		}
+		Executor.printHosts();
 	}
 
 	public static void main(String[] args) throws ClassNotFoundException,
