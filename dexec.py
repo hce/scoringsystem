@@ -131,7 +131,6 @@ class DExec:
 
 if __name__ == '__main__':
     argv = sys.argv
-    argv = [sys.argv[0], '2', '127.0.0.1']
     try: maxprocs = int(argv[1])
     except: usage()
     try: ips = argv[2:]
