@@ -3,6 +3,7 @@
 from sys import exit, argv, stderr, stdout
 from os import popen
 import re
+import time
 
 shit = {'parse': "Problem parsing ping result -- shouldn't happen!",
         'send' : "Problem sending packets -- no single ICMP send succeeded",
@@ -12,6 +13,7 @@ def die(reason):
     try: msg = shit[reason]
     except: msg = "unknown reason"
     stdout.write(msg)
+    time.sleep(2) # for testing
     exit(1)
 
 def do_ping(ip):

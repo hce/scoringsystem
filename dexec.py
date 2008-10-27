@@ -15,7 +15,7 @@ def die(reason):
     sys.exit(1)      
 
 def usage():
-    die("USAGE: %s <MAXPROCS> <ALLOWEDIP> [<ALLOWEDIP>] ...")
+    die("USAGE: %s <MAXPROCS> <ALLOWEDIP> [<ALLOWEDIP>] ..." % sys.argv[0])
 
 def mksock():
     return socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -65,9 +65,13 @@ class SocketHandler(threading.Thread):
         self.runscript(cmd, parms)
     def runscript(self, cmd, parms):
         lendtime = time.time() + CHILDTIMEOUT
-        try: process = subprocess.Popen(['./' + cmd] + parms, stdout=subprocess.PIPE, cwd=self.scriptpath)
+        cmdlist = ['./' + cmd] + parms
+        print "[FORK] %s" % " ".join(cmdlist)
+        try: process = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, cwd=self.scriptpath)
         except Exception, e:
+            print "[e] %s" % e
             self.die("500 %s" % e)
+        print "[%d] launched" % process.pid
         while True:
             time.sleep(1)
             if time.time() > lendtime: break
@@ -80,6 +84,7 @@ class SocketHandler(threading.Thread):
             else:
                 message = process.stdout.read().replace("\n", "")
             process.stdout.close()
+            print "[%d] %d %s" % (process.pid, status, message)
             self.die("600 %d %s" % (status, message))
         try: os.kill(process.pid, 15)
         except: pass
