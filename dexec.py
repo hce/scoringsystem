@@ -5,9 +5,33 @@ import socket
 import time
 import subprocess
 
-import linereader
-
 CHILDTIMEOUT = 60
+
+class EOFException(Exception): pass
+class LineReader:
+    buf = ''
+    def __init__(self, socket, CANCELAT):
+        self.s = socket
+        self.CANCELAT = CANCELAT
+    def readline(self):
+        while True:
+            pos = self.buf.find("\n")
+            if pos != -1:
+                line, self.buf = self.buf[:pos], self.buf[pos + 1:]
+                return line
+            if len(self.buf) > self.CANCELAT:
+                # cause a panic
+                try: self.s.close()
+                except: pass
+                return ''
+            frag = self.s.recv(8192)
+            if frag == None: raise EOFException()
+            if len(frag) == 0: raise EOFException()
+            frag = frag.replace("\r", "")
+            if len(frag) == 0:
+                buf, self.buf = self.buf, ''
+                return buf # EOF
+            self.buf = self.buf + frag
 
 def die(reason):
     sys.stderr.write(reason)
@@ -56,7 +80,7 @@ class SocketHandler(threading.Thread):
         try: self.cs.settimeout(60)
         except: return    # If we can't set a timeout, return
         self.cs.sendall("200 %d Welcome\n" % nr)
-        self.lr = linereader.LineReader(self.cs, 8192)
+        self.lr = LineReader(self.cs, 8192)
         cmdline = self.lr.readline().split(" ", 1)
         if len(cmdline) < 2: self.die("300 Invalid parameter count")
         cmd = cmdline[0]
