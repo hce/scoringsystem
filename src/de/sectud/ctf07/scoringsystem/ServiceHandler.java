@@ -167,6 +167,7 @@ public class ServiceHandler implements Runnable {
 							Executor.Action.STORE, teamHost, flagIDID, flagID);
 					verboseMessage = ss.getStatusMessage();
 					retCode = ss.getReturnCode();
+					int hostID = ss.getExecutingHost();
 
 					if (RETCODE_TIMEOUT.equals(retCode)) {
 						reportServiceStatus(this.team, this.name, retCode, "");
@@ -174,7 +175,7 @@ public class ServiceHandler implements Runnable {
 						reportAsAcceptingIfCurrentlyNotRunning();
 					}
 
-					printSREvent("=>", this.team, this.name, retCode,
+					printSREvent(hostID, "=>", this.team, this.name, retCode,
 							verboseMessage);
 
 					if (retCode.getSuccess() != Success.SUCCESS) {
@@ -214,8 +215,8 @@ public class ServiceHandler implements Runnable {
 		}
 	}
 
-	private void printSREvent(String string, String team2, String name2,
-			ReturnCode retCode, String verboseMessage) {
+	private void printSREvent(int hostID, String string, String team2,
+			String name2, ReturnCode retCode, String verboseMessage) {
 		String sucflr = retCode.getSuccess().toString();
 		String reason = retCode.getReason().toString();
 		String vm = verboseMessage.replace('\n', ' ');
@@ -233,9 +234,10 @@ public class ServiceHandler implements Runnable {
 		} else {
 			padding = padding.substring(0, charsToPad);
 		}
-		System.out.printf("_[1m%s_[0m%s[_[1m%s_[0m] %s%s [_[1m%s_[0m%s%s]\n"
-				.replace('_', (char) 27), string, team2, name2, padding,
-				sucflr, reason, sep, vm);
+		System.out.printf(
+				"%02d _[1m%s_[0m%s[_[1m%s_[0m] %s%s [_[1m%s_[0m%s%s]\n"
+						.replace('_', (char) 27), hostID, string, team2, name2,
+				padding, sucflr, reason, sep, vm);
 	}
 
 	private boolean noStatusAvailable(String team, String service)
@@ -361,11 +363,13 @@ public class ServiceHandler implements Runnable {
 			ReturnCode retCode = null;
 			String errorMessage = "";
 			String flagIDID = flagIDFromFlag(flagID);
+			int hostID = -1;
 			try {
 				ServiceStatus ss = Executor.runTestscript(script,
 						Action.RETRIEVE, teamHost, flagIDID, flagID);
 				retCode = ss.getReturnCode();
 				errorMessage = ss.getStatusMessage();
+				hostID = ss.getExecutingHost();
 				if (retCode == RETCODE_TIMEOUT) {
 					reportServiceStatus(teamID, this.name, retCode,
 							errorMessage);
@@ -374,8 +378,8 @@ public class ServiceHandler implements Runnable {
 				e.printStackTrace();
 			}
 
-			printSREvent(flagDefended ? "<=" : "CF", this.team, this.name,
-					retCode, errorMessage);
+			printSREvent(hostID, flagDefended ? "<=" : "CF", this.team,
+					this.name, retCode, errorMessage);
 
 			// mark the flag as updated
 			connection = DBConnection.getInstance().getDB();

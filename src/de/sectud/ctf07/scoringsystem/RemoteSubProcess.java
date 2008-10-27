@@ -41,6 +41,12 @@ public final class RemoteSubProcess implements SubProcess {
 	private boolean checked = false;
 
 	/**
+	 * Unique number to identify host. This value is used to set the hostNR in
+	 * all created ServiceStatus instances.
+	 */
+	private final int hostNR;
+
+	/**
 	 * Instanciate.
 	 * 
 	 * @param host
@@ -48,18 +54,22 @@ public final class RemoteSubProcess implements SubProcess {
 	 * @param timeout
 	 *            timeout in milliseconds after which reading from the socket is
 	 *            given up. 60000 is a reasonable default.
+	 * @param hostNR
+	 *            unique number to identify host. Can be null if you do not
+	 *            require this value.
 	 * @throws UnknownHostException
 	 *             If the specified host is not an IP and could not resolved
 	 * @throws IOException
 	 *             on IO errors
 	 */
-	public RemoteSubProcess(String host, int timeout)
+	public RemoteSubProcess(String host, int timeout, int hostNR)
 			throws UnknownHostException, IOException {
 		s = new Socket(host, REMOTEEXECPORT);
 		s.setSoTimeout(timeout);
 		lbr = new LimitedBufferedReader(new InputStreamReader(s
 				.getInputStream()));
 		ps = new PrintStream(s.getOutputStream());
+		this.hostNR = hostNR;
 	}
 
 	/**
@@ -162,7 +172,7 @@ public final class RemoteSubProcess implements SubProcess {
 		}
 		String statusMessage = msgs[2];
 		ReturnCode returnCode = ReturnCode.fromOrdinal(retVal);
-		return new ServiceStatus(returnCode, statusMessage);
+		return new ServiceStatus(returnCode, statusMessage, hostNR);
 	}
 
 	/**
@@ -186,11 +196,12 @@ public final class RemoteSubProcess implements SubProcess {
 	public static void main(String[] args) throws UnknownHostException,
 			IOException, ExecutionException {
 		RemoteSubProcess rsp = new RemoteSubProcess("salato.hcesperer.org",
-				60000);
+				60000, 0);
 		System.out.println(rsp.checkonly());
-		rsp = new RemoteSubProcess("salato.hcesperer.org", 60000);
+		rsp = new RemoteSubProcess("salato.hcesperer.org", 60000, 0);
 		System.out.println(rsp.check());
-		ServiceStatus ss = rsp.runTestscript("ping.py store 130.83.160.1 foo bar");
+		ServiceStatus ss = rsp
+				.runTestscript("ping.py store 130.83.160.1 foo bar");
 		System.out.println(ss.getReturnCode().toString());
 		System.out.println(ss.getStatusMessage());
 	}

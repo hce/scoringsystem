@@ -5,12 +5,18 @@ public final class ServiceStatus {
 
 	private final String statusMessage;
 
+	private final int executingHost;
+
 	public ReturnCode getReturnCode() {
 		return returnCode;
 	}
 
 	public String getStatusMessage() {
 		return statusMessage;
+	}
+
+	public int getExecutingHost() {
+		return executingHost;
 	}
 
 	@Override
@@ -46,10 +52,12 @@ public final class ServiceStatus {
 		return true;
 	}
 
-	public ServiceStatus(final ReturnCode returnCode, final String statusMessage) {
+	public ServiceStatus(final ReturnCode returnCode,
+			final String statusMessage, final int executingHost) {
 		super();
 		this.returnCode = returnCode;
 		this.statusMessage = statusMessage;
+		this.executingHost = executingHost;
 	}
 
 }
