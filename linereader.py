@@ -1,3 +1,4 @@
+class EOFException(Exception): pass
 class LineReader:
     buf = ''
     def __init__(self, socket, CANCELAT):
