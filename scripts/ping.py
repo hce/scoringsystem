@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from sys import exit, argv, stderr
+from sys import exit, argv, stderr, stdout
 from os import popen
 import re
 
@@ -11,7 +11,7 @@ shit = {'parse': "Problem parsing ping result -- shouldn't happen!",
 def die(reason):
     try: msg = shit[reason]
     except: msg = "unknown reason"
-    stderr.write(msg)
+    stdout.write(msg)
     exit(1)
 
 def do_ping(ip):
@@ -32,7 +32,8 @@ def do_ping(ip):
     if tpackets <= 0: die('send')
     if rpackets <= 0: die('recv')
 
-    stderr.write("All ok. %s%% packet loss." % packetloss)
+    stdout.write("All ok. %s%% packet loss." % packetloss)
+    stdout.flush()
 
     exit(0) # success
 
@@ -43,7 +44,7 @@ def retrieve((ip, flagid, flag)):
     do_ping(ip)
 
 def test((ip)):
-    stderr.write("Retrieving always succeeds")
+    stdout.write("Retrieving always succeeds")
     exit(0) # service is fully functional
     
 try:
@@ -54,9 +55,9 @@ try:
 except SystemExit, e:
     exit(e.code)
 except Exception, e:
-    stderr.write("ERROR! ")
-    stderr.write(str(e))
-    print "Error: " + str(e)
-    print "Usage: %s store|retrieve IP FLAGID FLAG" % argv[0]
-    print "       %s test IP" % argv[0]
+    stdout.write("ERROR! ")
+    stdout.write(str(e))
+    stderr.write("Error: %s\n" % str(e))
+    stderr.write("Usage: %s store|retrieve IP FLAGID FLAG\n" % argv[0])
+    stderr.write("       %s test IP\n" % argv[0])
 stderr.flush()

@@ -3,6 +3,7 @@ import os
 import threading
 import socket
 import time
+import subprocess
 
 import linereader
 
@@ -25,8 +26,8 @@ class CloseHandler(threading.Thread):
         self.cs = cs
         self.addr = addr
     def run(self):
-        cs.sendall("400 You are not authorized to connect\n")
-        cs.close()
+        self.cs.sendall("400 You are not authorized to connect\n")
+        self.cs.close()
 
 class DieException(Exception): pass
 class SocketHandler(threading.Thread):
@@ -51,7 +52,7 @@ class SocketHandler(threading.Thread):
         except: return    # If we can't set a timeout, return
         self.cs.sendall("200 Welcome\n")
         self.lr = linereader.LineReader(self.cs, 8192)
-        cmdline = self.lr.readline().split(" ")
+        cmdline = self.lr.readline().split(" ", 1)
         if len(cmdline) < 2: self.die("300 Invalid parameter count")
         cmd = cmdline[0]
         if cmd not in self.allowedscripts: self.die("400 Invalid script specified")
@@ -59,19 +60,28 @@ class SocketHandler(threading.Thread):
         self.runscript(cmd, parms)
     def runscript(self, cmd, parms):
         lendtime = time.time() + CHILDTIMEOUT
-        try: pid = os.spawnv(os.P_NOWAIT, cmd, [cmd] + parms)
+        try: process = subprocess.Popen(['./' + cmd] + parms, stdout=subprocess.PIPE, cwd=self.scriptpath)
         except Exception, e:
             self.die("500 %s" % e)
         while True:
+            time.sleep(1)
             if time.time() > lendtime: break
-            tpid, status = os.waitpid(pid, os.WNOHANG)
-            if tpid == pid:
-                status = (status % 512) >> 8
-                self.die("600 %d" % status)
-        os.kill(pid, 15)
+            status = process.poll()
+            if status == None: continue
+            if status == -1: continue
+            if status < 0:
+                message = "Testscript was killed by signal %d" % status
+                status = 13 # timeout
+            else:
+                message = process.stdout.read().replace("\n", "")
+            process.stdout.close()
+            self.die("600 %d %s" % (status, message))
+        try: os.kill(process.pid, 15)
+        except: pass
         time.sleep(1)
-        os.kill(pid, 9)
-        self.die("600 13")  # 13: service respone timeout
+        try: os.kill(process.pid, 9)
+        except: pass
+        self.die("600 13 Service timeout")  # 13: service respone timeout
         
 
 class DExec:
@@ -81,8 +91,8 @@ class DExec:
         self.address = address
         self.mylock = threading.Lock()
         self.running = 0
-        self.scripts = ['foo', 'bar'] # TODO: read scripts/ dir here
         self.scriptpath = "scripts/"
+        self.scripts = [i for i in os.listdir(self.scriptpath) if not i.startswith(".")]
         self.dostop = False
     def incrunning(self, by=1):
         self.mylock.acquire_lock()
@@ -104,7 +114,7 @@ class DExec:
                 sys.stderr.write("Error trying to accept a connection: %s\n" % e)
                 continue
             if not self.isauthed(addr):
-                sys.stderr.write("Peer %s is not authorized to connect\n", repr(addr))
+                sys.stderr.write("Peer %s is not authorized to connect\n" % repr(addr))
                 CloseHandler(cs, addr).start()
                 continue
             SocketHandler(cs, addr, self.scripts, self.scriptpath, self).start()
@@ -118,6 +128,7 @@ if __name__ == '__main__':
     try: ips = argv[2:]
     except: usage()
     if len(ips) < 1: usage()
-    bindaddr = ('0.0.0.0', 1726)
+    bindaddr = ('0.0.0.0', 1724)
     dx = DExec(maxprocs, ips, bindaddr)
     dx.run()
+        
