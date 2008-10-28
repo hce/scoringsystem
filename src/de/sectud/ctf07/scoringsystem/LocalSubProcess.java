@@ -54,8 +54,8 @@ public class LocalSubProcess implements SubProcess {
 					retCode = RETCODE_TIMEOUT;
 				}
 			}
-			p.destroy();
 			ServiceStatus ss = new ServiceStatus(retCode, cr.getReadData(), -1);
+			p.destroy();
 			return ss;
 		} catch (Throwable t) {
 			t.printStackTrace();
