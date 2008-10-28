@@ -61,6 +61,8 @@ public class FlagHandler implements Runnable {
 
 	private ServiceHandler[] handlers;
 
+	private boolean distStop = false;
+
 	public FlagHandler(ServiceHandler[] handlers) {
 		this.handlers = handlers;
 		for (int i = 0; i < handlers.length; i++) {
@@ -129,8 +131,9 @@ public class FlagHandler implements Runnable {
 			System.out.println("Created " + handlers.size()
 					+ "service handlers.");
 
-			Thread handler = new Thread(new FlagHandler(handlers
-					.toArray(new ServiceHandler[0])));
+			FlagHandler flagHandler = new FlagHandler(handlers
+					.toArray(new ServiceHandler[0]));
+			Thread handler = new Thread(flagHandler);
 			handler.start();
 			System.out.println("===== ALL SET UP. STARTING CONSOLE. =====");
 			System.out.println("ENTER 'h' for help");
@@ -157,24 +160,30 @@ public class FlagHandler implements Runnable {
 					System.out.println("h  show this help");
 					break;
 				case 's':
-					for (ServiceHandler sh : handlers) {
-						sh.setDistributeFlags(false);
-					}
-					c.printf("Stopped flag distribution.\n");
+					flagHandler.stopDist();
+					c
+							.printf("Flag distribution will be stopped after this round.\n");
 					break;
 				case 'q':
 					c.printf("Quitting...\n");
 					System.exit(0);
 					return;
 				case 'c':
-					for (ServiceHandler sh : handlers) {
-						sh.setDistributeFlags(true);
-					}
+					flagHandler.contDist();
 					c.printf("Started flag distribution.\n");
 					break;
 				}
 			}
 		}
+	}
+
+	public synchronized void stopDist() {
+		this.distStop = true;
+	}
+
+	public synchronized void contDist() {
+		this.distStop = false;
+		notifyAll();
 	}
 
 	public void run() {
@@ -184,8 +193,8 @@ public class FlagHandler implements Runnable {
 			qm.addMass(this.handlers);
 			int numJobs = qm.numJobs();
 			while (numJobs > 0) {
-				System.out.printf("===== RUNNING: %d jobs to do =====\n",
-						numJobs);
+				System.out.printf("===== ROUND %d: %d jobs to do =====\n",
+						round, numJobs);
 				try {
 					Thread.sleep(10000);
 				} catch (InterruptedException e) {
@@ -194,7 +203,17 @@ public class FlagHandler implements Runnable {
 			}
 			System.out.printf("  ===== Round %d finished =====  \n", numJobs);
 			round++;
-			return;
+			synchronized (this) {
+				if (this.distStop) {
+					System.out.println("Flag distribution stopped. Waiting...");
+					while (this.distStop) {
+						try {
+							wait();
+						} catch (InterruptedException e) {
+						}
+					}
+				}
+			}
 		}
 	}
 }
