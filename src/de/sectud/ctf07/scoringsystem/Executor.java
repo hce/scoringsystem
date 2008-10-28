@@ -31,6 +31,11 @@ public final class Executor {
 		hosts = remoteHosts.toArray(emptystringarr);
 	}
 
+	public synchronized static void clearHostList() {
+		remoteHosts.clear();
+		hosts = remoteHosts.toArray(emptystringarr);
+	}
+
 	public static void setSeed(long seed) {
 		r.setSeed(seed);
 	}

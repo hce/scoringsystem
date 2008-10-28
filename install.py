@@ -93,7 +93,7 @@ adminPassword=%(adminpwd)s
     f.write("%s\n" % results['wwwroot'])
     f.close()
     if 'tspeers' in results:
-        f = open('control/slaves', 'w')
+        f = open('control/peers', 'w')
         f.write("\n".join(results['tspeers'].split(" ") + ['']))
         f.close()
 

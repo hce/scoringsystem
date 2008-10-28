@@ -71,12 +71,13 @@ public class FlagHandler implements Runnable {
 	}
 
 	private static void loadSlaves() {
-		String slaves = DJBSettings.loadText("control/slaves", "");
+		String slaves = DJBSettings.loadText("control/peers", "");
 		String[] slavelist;
 		if (slaves.trim().length() == 0) {
 			return;
 		}
 		slavelist = slaves.split("\n");
+		Executor.clearHostList();
 		for (int i = 0; i < slavelist.length; i++) {
 			Executor.addHost(slavelist[i]);
 			System.out.printf("Added %s as testscript slave.\n", slavelist[i]);
@@ -156,7 +157,7 @@ public class FlagHandler implements Runnable {
 					System.out.println("s  stop flag distribution");
 					System.out.println("q  terminate immediately");
 					System.out.println("c  continue flag distribution");
-					System.out.println("r  restart");
+					System.out.println("r  reload control/peers");
 					System.out.println("h  show this help");
 					break;
 				case 's':
@@ -168,6 +169,10 @@ public class FlagHandler implements Runnable {
 					c.printf("Quitting...\n");
 					System.exit(0);
 					return;
+				case 'r':
+					System.out.println("===== RELOADING PEER LIST =====");
+					loadSlaves();
+					break;
 				case 'c':
 					flagHandler.contDist();
 					c.printf("Started flag distribution.\n");
