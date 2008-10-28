@@ -57,7 +57,16 @@ import org.hcesperer.utils.djb.DJBSettings;
  * @author Hans-Christian Esperer
  * 
  */
-public class FlagHandler {
+public class FlagHandler implements Runnable {
+
+	private ServiceHandler[] handlers;
+
+	public FlagHandler(ServiceHandler[] handlers) {
+		this.handlers = handlers;
+		for (int i = 0; i < handlers.length; i++) {
+			handlers[i].setDistributeFlags(true);
+		}
+	}
 
 	private static void loadSlaves() {
 		String slaves = DJBSettings.loadText("control/slaves", "");
@@ -120,20 +129,9 @@ public class FlagHandler {
 			System.out.println("Created " + handlers.size()
 					+ "service handlers.");
 
-			ArrayList<Thread> threads = new ArrayList<Thread>();
-			for (ServiceHandler runnable : handlers) {
-				runnable.setDistributeFlags(true);
-				Thread t = new Thread(runnable);
-				t.setName("Service handler for team " + runnable.getTeam()
-						+ " [" + runnable.getName() + "]");
-				threads.add(t);
-			}
-
-			System.out.println("Created threads; now starting them.");
-			for (Thread t : threads) {
-				t.start();
-			}
-
+			Thread handler = new Thread(new FlagHandler(handlers
+					.toArray(new ServiceHandler[0])));
+			handler.start();
 			System.out.println("===== ALL SET UP. STARTING CONSOLE. =====");
 			System.out.println("ENTER 'h' for help");
 			Console c = null;
@@ -148,7 +146,7 @@ public class FlagHandler {
 				}
 			}
 			Reader r = c.reader();
-			consoleloop: while (true) {
+			while (true) {
 				int cmd = r.read();
 				switch (cmd) {
 				case 'h':
@@ -174,37 +172,29 @@ public class FlagHandler {
 					}
 					c.printf("Started flag distribution.\n");
 					break;
-				case 'r':
-					c.printf("Restarting flag handler.\n");
-					for (ServiceHandler sh : handlers) {
-						sh.quit();
-					}
-					for (Thread t : threads) {
-						t.interrupt();
-					}
-					c.printf("Waiting for all threads to finish\n");
-					{
-						boolean stillRunning = true;
-						while (stillRunning) {
-							stillRunning = false;
-							for (Thread t : threads) {
-								if (t.isAlive()) {
-									t.interrupt();
-									c.printf(".");
-									c.flush();
-									stillRunning = true;
-									try {
-										Thread.sleep(1024);
-									} catch (InterruptedException e) {
-									}
-								}
-							}
-						}
-					}
-					c.printf("Restarting.\n");
-					break consoleloop;
 				}
 			}
+		}
+	}
+
+	public void run() {
+		long round = 0;
+		QueueManager qm = new QueueManager(40);
+		while (true) {
+			qm.addMass(this.handlers);
+			int numJobs = qm.numJobs();
+			while (numJobs > 0) {
+				System.out.printf("===== RUNNING: %d jobs to do =====\n",
+						numJobs);
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e) {
+				}
+				numJobs = qm.numJobs();
+			}
+			System.out.printf("  ===== Round %d finished =====  \n");
+			round++;
+			return;
 		}
 	}
 }

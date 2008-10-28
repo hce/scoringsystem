@@ -66,7 +66,7 @@ import de.sectud.ctf07.scoringsystem.ReturnCode.Success;
  * @author Hans-Christian Esperer
  * 
  */
-public class ServiceHandler implements Runnable {
+public class ServiceHandler implements Runnable, QueueJob {
 
 	/**
 	 * Minimal age of a flag that may be collected in seconds
@@ -254,6 +254,33 @@ public class ServiceHandler implements Runnable {
 			return !res;
 		} finally {
 			DBConnection.getInstance().returnConnection(c);
+		}
+	}
+
+	@Override
+	public void runonce() {
+		try {
+			if (noStatusAvailable(this.team, this.name)) {
+				reportServiceStatus(this.team, this.name, ReturnCode
+						.makeReturnCode(Success.FAILURE,
+								ErrorValues.STATUSUNKNOWN),
+						"Please wait some minutes, until the gameserver can "
+								+ "determine the service status");
+			}
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+		}
+
+		/*
+		 * catch _ANY_ error, and resume work
+		 */
+		try {
+			retrieveFlags();
+			storeFlags();
+		} catch (Throwable t) {
+			System.err.println("-----SERIOUS ERROR HAPPENED AT THREAD "
+					+ Thread.currentThread().getName() + "-----");
+			System.err.println("Resuming operation in 60 seconds");
 		}
 	}
 
