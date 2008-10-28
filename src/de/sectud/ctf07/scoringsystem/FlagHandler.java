@@ -191,7 +191,7 @@ public class FlagHandler implements Runnable {
 		long nextRound;
 		QueueManager qm = new QueueManager(40);
 		while (true) {
-			nextRound = System.currentTimeMillis() + 300000;
+			nextRound = System.currentTimeMillis() + 600000;
 			qm.addMass(this.handlers);
 			int numJobs = qm.numJobs();
 			while (numJobs > 0) {
