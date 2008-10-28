@@ -217,7 +217,7 @@ public class FlagHandler implements Runnable {
 				}
 			}
 			while (System.currentTimeMillis() < nextRound) {
-				System.out.printf("Waiting for the next round: %ds left.\n",
+				System.out.printf("Waiting for the next round: %dms left.\n",
 						(int) (nextRound - System.currentTimeMillis()));
 				try {
 					Thread.sleep(1000);
