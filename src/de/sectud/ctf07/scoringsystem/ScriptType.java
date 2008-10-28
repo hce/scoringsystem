@@ -36,6 +36,14 @@
 
 package de.sectud.ctf07.scoringsystem;
 
+/**
+ * Type of the testscript. At the moment, only 'binary' is supported, which
+ * means anything the host can execute (shell scripts and binaries under UNIX)
+ * 
+ * @author Hans-Christian Esperer
+ * @email hc@hcesperer.org
+ * 
+ */
 public enum ScriptType {
 	adela, binary
 }
