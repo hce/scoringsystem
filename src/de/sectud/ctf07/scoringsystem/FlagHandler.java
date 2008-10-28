@@ -192,7 +192,7 @@ public class FlagHandler implements Runnable {
 				}
 				numJobs = qm.numJobs();
 			}
-			System.out.printf("  ===== Round %d finished =====  \n");
+			System.out.printf("  ===== Round %d finished =====  \n", numJobs);
 			round++;
 			return;
 		}

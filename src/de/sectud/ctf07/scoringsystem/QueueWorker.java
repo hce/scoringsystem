@@ -41,13 +41,15 @@ public class QueueWorker extends Thread {
 						break;
 					}
 					qj = this.job;
-					this.job = null;
 				} catch (InterruptedException e) {
 				}
 			}
 			if (qj != null) {
 				try {
 					qj.runonce();
+					synchronized (this) {
+						this.job = null;
+					}
 				} catch (Throwable t) {
 				}
 			}
