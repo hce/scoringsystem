@@ -91,13 +91,30 @@ public class ServiceHandler implements Runnable, QueueJob {
 
 	private final EventLogger log = Logger.getLogger();
 
+	/**
+	 * RNG
+	 */
 	private Random random = new Random();
 
+	/**
+	 * Set to true if flags should be delivered
+	 */
 	private boolean distributeFlags = false;
 
+	/**
+	 * used for status display
+	 */
 	private static int CHARSTOPAD = 20;
 
+	/**
+	 * deprecated
+	 */
 	private final int startupSleepTime;
+
+	/**
+	 * Indicates whether runonce() was called already
+	 */
+	private boolean firstrun = true;
 
 	static {
 		try {
@@ -259,16 +276,19 @@ public class ServiceHandler implements Runnable, QueueJob {
 
 	@Override
 	public void runonce() {
-		try {
-			if (noStatusAvailable(this.team, this.name)) {
-				reportServiceStatus(this.team, this.name, ReturnCode
-						.makeReturnCode(Success.FAILURE,
-								ErrorValues.STATUSUNKNOWN),
-						"Please wait some minutes, until the gameserver can "
-								+ "determine the service status");
+		if (firstrun) {
+			try {
+				if (noStatusAvailable(this.team, this.name)) {
+					reportServiceStatus(this.team, this.name, ReturnCode
+							.makeReturnCode(Success.FAILURE,
+									ErrorValues.STATUSUNKNOWN),
+							"Please wait some minutes, until the gameserver can "
+									+ "determine the service status");
+				}
+				firstrun = false;
+			} catch (SQLException e1) {
+				e1.printStackTrace();
 			}
-		} catch (SQLException e1) {
-			e1.printStackTrace();
 		}
 
 		/*

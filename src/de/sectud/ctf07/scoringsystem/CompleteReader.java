@@ -19,6 +19,10 @@ public class CompleteReader implements Runnable {
 		runningThread.start();
 	}
 
+	public void interrupt() {
+		runningThread.interrupt();
+	}
+
 	public String getReadData() {
 		if (runningThread.isAlive()) {
 			runningThread.interrupt();

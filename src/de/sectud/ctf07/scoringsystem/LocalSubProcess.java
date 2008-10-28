@@ -5,15 +5,30 @@ import java.io.IOException;
 import de.sectud.ctf07.scoringsystem.ReturnCode.ErrorValues;
 import de.sectud.ctf07.scoringsystem.ReturnCode.Success;
 
+/**
+ * A local subprocess.
+ * 
+ * @author Hans-Christian Esperer
+ * @email hc@hcesperer.org
+ * 
+ */
 public class LocalSubProcess implements SubProcess {
+	/**
+	 * The runtime; cached for performance
+	 */
 	private static Runtime rt = Runtime.getRuntime();
 
+	/**
+	 * TIMEOUT returncode
+	 */
 	private final ReturnCode RETCODE_TIMEOUT = ReturnCode.makeReturnCode(
 			Success.FAILURE, ErrorValues.TIMEOUT);
 
-	// String.format("scripts/%s store %s %s %s", script,
-	// teamHost, flagIDID, flagID)
-
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see de.sectud.ctf07.scoringsystem.SubProcess#runTestscript(java.lang.String)
+	 */
 	public ServiceStatus runTestscript(String scriptAndParams)
 			throws ExecutionException {
 		Process p;
@@ -23,28 +38,32 @@ public class LocalSubProcess implements SubProcess {
 			throw new ExecutionException(e);
 		}
 		CompleteReader cr = new CompleteReader(p.getInputStream());
-		int max = 0;
-		ReturnCode retCode = RETCODE_TIMEOUT;
-		while (max++ < 60) {
-			try {
-				int retval = p.exitValue();
-				retCode = ReturnCode.fromOrdinal(retval);
-			} catch (IllegalThreadStateException e) {
+		try {
+			int max = 0;
+			ReturnCode retCode = RETCODE_TIMEOUT;
+			while (max++ < 60) {
 				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					throw new ExecutionException(e1);
+					int retval = p.exitValue();
+					retCode = ReturnCode.fromOrdinal(retval);
+				} catch (IllegalThreadStateException e) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e1) {
+						throw new ExecutionException(e1);
+					}
+					retCode = RETCODE_TIMEOUT;
 				}
-				retCode = RETCODE_TIMEOUT;
 			}
-		}
-		if (retCode == RETCODE_TIMEOUT) {
+			p.destroy();
+			ServiceStatus ss = new ServiceStatus(retCode, cr.getReadData(), -1);
+			return ss;
+		} catch (Throwable t) {
+			t.printStackTrace();
 			try {
-				p.destroy();
-			} catch (Throwable t) {
+				cr.interrupt();
+			} catch (Throwable t2) {
 			}
 		}
-		ServiceStatus ss = new ServiceStatus(retCode, cr.getReadData(), -1);
-		return ss;
+		return null;
 	}
 }
