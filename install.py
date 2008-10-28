@@ -28,6 +28,13 @@ In addition to that, you'll need to know the exact URL your users
 will be accessing the scorebot through."""),
     ('q', 'wwwpath', "Path to www directory", "/var/www/score"),
     ('q', 'wwwroot', "URL to access scoredata from", "http://130.83.160.197/score"),
+    ('e', """The scorebot allows you to distribute testscript
+execution various peers. For each peer, a maximum number of
+connections and some other parameters can be configured. If a peer is
+not working, the next one is tried. If no peer can be reached, the job
+is executed locally. If you want to use that feature, enter the IPs /
+hostnames of the peers now, separated by spaces."""),
+    ('q', 'tspeers', "Peer IPs", ''),
     ('e', """I will now try to import the database. I do this by invoking
 psql directly. You will be asked for the database password, although you
 already specified it here."""),
@@ -47,7 +54,8 @@ def ask_questions():
             sys.stdout.flush()
             res = sys.stdin.readline()[:-1]
             if res == '': res = item[3]
-            if res == '': raise EmptyException()
+            if item[1] != 'tspeers': #hack
+                if res == '': raise EmptyException()
             results[item[1]] = res
         elif qtype == 'r':
             cmd = item[1] % results
@@ -84,6 +92,10 @@ adminPassword=%(adminpwd)s
     f = open('control/wwwroot', 'w')
     f.write("%s\n" % results['wwwroot'])
     f.close()
+    if 'tspeers' in results:
+        f = open('control/slaves', 'w')
+        f.write("\n".join(results['tspeers'].split(" ") + ['']))
+        f.close()
 
 
 if __name__ == '__main__':
