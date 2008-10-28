@@ -188,8 +188,10 @@ public class FlagHandler implements Runnable {
 
 	public void run() {
 		long round = 0;
+		long nextRound;
 		QueueManager qm = new QueueManager(40);
 		while (true) {
+			nextRound = System.currentTimeMillis() + 300000;
 			qm.addMass(this.handlers);
 			int numJobs = qm.numJobs();
 			while (numJobs > 0) {
@@ -212,6 +214,14 @@ public class FlagHandler implements Runnable {
 						} catch (InterruptedException e) {
 						}
 					}
+				}
+			}
+			while (System.currentTimeMillis() < nextRound) {
+				System.out.printf("Waiting for the next round: %ds left.\n",
+						(int) (nextRound - System.currentTimeMillis()));
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
 				}
 			}
 		}
