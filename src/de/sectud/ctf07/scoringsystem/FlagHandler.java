@@ -73,11 +73,11 @@ public class FlagHandler implements Runnable {
 	private static void loadSlaves() {
 		String slaves = DJBSettings.loadText("control/peers", "");
 		String[] slavelist;
+		Executor.clearHostList();
 		if (slaves.trim().length() == 0) {
 			return;
 		}
 		slavelist = slaves.split("\n");
-		Executor.clearHostList();
 		for (int i = 0; i < slavelist.length; i++) {
 			Executor.addHost(slavelist[i]);
 			System.out.printf("Added %s as testscript slave.\n", slavelist[i]);

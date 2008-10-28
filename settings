@@ -1,8 +1,8 @@
 #(C) 2007-2008, Hans-Christian Esperer.
-#Tue Oct 28 19:17:04 CET 2008
-adminPassword=Parek17\#
+#Tue Oct 28 22:46:09 CET 2008
+adminPassword=foo
 flagMinimalAge=300
 user=ctf
-password=ecket51\!Fifa\!
+password=ctf
 connectionString=jdbc\:postgresql\://localhost/ctf
 singleInstanceConnection=false
