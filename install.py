@@ -29,7 +29,7 @@ will be accessing the scorebot through."""),
     ('q', 'wwwpath', "Path to www directory", "/var/www/score"),
     ('q', 'wwwroot', "URL to access scoredata from", "http://130.83.160.197/score"),
     ('e', """The scorebot allows you to distribute testscript
-execution various peers. For each peer, a maximum number of
+execution to various peers. For each peer, a maximum number of
 connections and some other parameters can be configured. If a peer is
 not working, the next one is tried. If no peer can be reached, the job
 is executed locally. If you want to use that feature, enter the IPs /
