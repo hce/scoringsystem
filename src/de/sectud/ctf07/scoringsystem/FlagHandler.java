@@ -194,9 +194,17 @@ public class FlagHandler implements Runnable {
 	public void run() {
 		long round = 0;
 		long nextRound;
-		QueueManager qm = new QueueManager(40);
+		int numWorkers = DJBSettings.loadInt("control/numworkers", 10);
+		QueueManager qm = new QueueManager(numWorkers);
+		System.out.printf("Using %d worker threads (control/numworkers)\n",
+				numWorkers);
 		while (true) {
-			nextRound = System.currentTimeMillis() + 600000;
+			long ROUNDDELAY = (long) DJBSettings.loadInt("control/rounddelay",
+					600) * 1000;
+			System.out.printf(
+					"=== BEGIN ROUND; delays between rounds: %dms ===\n",
+					ROUNDDELAY);
+			nextRound = System.currentTimeMillis() + ROUNDDELAY;
 			qm.addMass(this.handlers);
 			while (qm.hasJobs()) {
 				System.out.printf(
