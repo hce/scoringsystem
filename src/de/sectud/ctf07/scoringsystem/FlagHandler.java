@@ -61,10 +61,12 @@ public class FlagHandler implements Runnable {
 
 	private ServiceHandler[] handlers;
 
-	private boolean distStop = false;
+	private boolean distStop = true;
 
 	private QueueManager qm = new QueueManager(DJBSettings.loadInt(
 			"control/numworkers", 10));
+
+	private boolean halted = false;
 
 	public FlagHandler(ServiceHandler[] handlers) {
 		this.handlers = handlers;
@@ -97,7 +99,6 @@ public class FlagHandler implements Runnable {
 		loadSlaves();
 		while (true) {
 			Connection connection = DBConnection.getInstance().getDB();
-
 			PreparedStatement ps;
 			ps = connection
 					.prepareStatement("select team_name from teams order by team_name");
@@ -141,6 +142,11 @@ public class FlagHandler implements Runnable {
 
 			FlagHandler flagHandler = new FlagHandler(handlers
 					.toArray(new ServiceHandler[0]));
+			if ((args.length > 0) && "-h".equals(args[0])) {
+				flagHandler.stopDist();
+			} else {
+				flagHandler.contDist();
+			}
 			Thread handler = new Thread(flagHandler);
 			handler.start();
 			System.out.println("===== ALL SET UP. STARTING CONSOLE. =====");
@@ -185,11 +191,25 @@ public class FlagHandler implements Runnable {
 					loadSlaves();
 					break;
 				case 'c':
+					if (!flagHandler.isHalted()) {
+						c
+								.printf("Cannot continue normal distribution ATM -- you\n"
+										+ "must use the 's' command first and wait for the\n"
+										+ "round to finish.\n");
+						break;
+					}
 					flagHandler.setDistributeFlags(true);
 					flagHandler.contDist();
 					c.printf("Started flag distribution.\n");
 					break;
 				case 'f':
+					if (!flagHandler.isHalted()) {
+						c
+								.printf("Cannot start flag collection ATM -- you\n"
+										+ "must use the 's' command first and wait for the\n"
+										+ "round to finish.\n");
+						break;
+					}
 					flagHandler.setDistributeFlags(false);
 					flagHandler.contDist();
 					c.printf("Began collecting pending flags.\n");
@@ -207,6 +227,10 @@ public class FlagHandler implements Runnable {
 				}
 			}
 		}
+	}
+
+	private boolean isHalted() {
+		return this.halted;
 	}
 
 	private int getWorkers() {
@@ -242,7 +266,11 @@ public class FlagHandler implements Runnable {
 					"=== BEGIN ROUND; delays between rounds: %dms ===\n",
 					ROUNDDELAY);
 			nextRound = System.currentTimeMillis() + ROUNDDELAY;
-			qm.addMass(this.handlers);
+			synchronized (this) {
+				if (!this.distStop) {
+					qm.addMass(this.handlers);
+				}
+			}
 			while (qm.hasJobs()) {
 				System.out.printf(
 						"===== ROUND %d: %d jobs pending, %d running =====\n",
@@ -256,6 +284,7 @@ public class FlagHandler implements Runnable {
 			round++;
 			synchronized (this) {
 				if (this.distStop) {
+					this.halted = true;
 					System.out
 							.println("Flag distribution stopped. Use the 'f' command to collect "
 									+ "all pending flags. Use 'c' to continue normal operation.");
@@ -265,16 +294,21 @@ public class FlagHandler implements Runnable {
 						} catch (InterruptedException e) {
 						}
 					}
+					this.halted = false;
 				}
 			}
+			System.out.printf("\r");
+			System.out.flush();
 			while (System.currentTimeMillis() < nextRound) {
-				System.out.printf("Waiting for the next round: %dms left.\n",
+				System.out.printf("Waiting for the next round: %dms left.\r",
 						(int) (nextRound - System.currentTimeMillis()));
+				System.out.flush();
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 				}
 			}
+			System.out.println();
 		}
 	}
 }
