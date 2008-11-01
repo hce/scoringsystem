@@ -227,6 +227,9 @@ public class WebpageGenerator implements Runnable {
 		}
 	}
 
+	/**
+	 * Update all requested data sources
+	 */
 	private void handleStuff() {
 		Connection c = DBConnection.getInstance().getDB();
 		try {
@@ -251,6 +254,16 @@ public class WebpageGenerator implements Runnable {
 		}
 	}
 
+	/**
+	 * Generate RSS feed
+	 * 
+	 * @param c
+	 *            connection to use
+	 * @param filename
+	 *            filename to rss
+	 * @throws SQLException
+	 * @throws FileNotFoundException
+	 */
 	private void generateRSSFeed(Connection c, String filename)
 			throws SQLException, FileNotFoundException {
 		PrintStream out = new PrintStream(filename);
@@ -269,43 +282,53 @@ public class WebpageGenerator implements Runnable {
 
 		rs = s.executeQuery("select uid,advisory_team,advisory_description"
 				+ " from advisories order by uid");
-		while (rs.next()) {
-			long uid = rs.getLong(1);
-			// String advTeam = escape(rs.getString(2));
-			String advDesc = escape(rs.getString(3));
-			String advService;
-			String advSeverity;
-			try {
-				String desc = advDesc;
-				int pos = desc.indexOf("New advisory by");
-				if (pos != -1) {
-					desc = desc.substring(pos);
+		try {
+			while (rs.next()) {
+				long uid = rs.getLong(1);
+				// String advTeam = escape(rs.getString(2));
+				String advDesc = escape(rs.getString(3));
+				String advService;
+				String advSeverity;
+				try {
+					String desc = advDesc;
+					int pos = desc.indexOf("New advisory by");
+					if (pos != -1) {
+						desc = desc.substring(pos);
+					}
+					String[] descParts = desc.split("\n");
+					advService = descParts[1].split(":", 2)[1].trim();
+					advSeverity = descParts[2].split(":", 2)[1].trim();
+				} catch (Throwable t) {
+					advService = "";
+					advSeverity = "";
 				}
-				String[] descParts = desc.split("\n");
-				advService = descParts[1].split(":", 2)[1].trim();
-				advSeverity = descParts[2].split(":", 2)[1].trim();
-			} catch (Throwable t) {
-				advService = "";
-				advSeverity = "";
-			}
 
-			if (advDesc.length() > 256) {
-				advDesc = advDesc.substring(0, 256) + "...";
+				if (advDesc.length() > 256) {
+					advDesc = advDesc.substring(0, 256) + "...";
+				}
+				out
+						.printf(
+								"<item>\n  <title>%s (%s)</title>\n  <description>%s</description>\n"
+										+ "  <link>%s/adv/a_%d.html</link>\n  <guid>%s/adv/a_%d.html</guid>\n</item>",
+								HTMLFilter.filter(advService), HTMLFilter
+										.filter(advSeverity), HTMLFilter
+										.filter(HTMLFilter.filter(advDesc)
+												.replace("\n", "<br />")),
+								wwwRoot, uid, wwwRoot, uid);
 			}
-			out
-					.printf(
-							"<item>\n  <title>%s (%s)</title>\n  <description>%s</description>\n"
-									+ "  <link>%s/adv/a_%d.html</link>\n  <guid>%s/adv/a_%d.html</guid>\n</item>",
-							HTMLFilter.filter(advService), HTMLFilter
-									.filter(advSeverity), HTMLFilter
-									.filter(HTMLFilter.filter(advDesc).replace(
-											"\n", "<br />")), wwwRoot, uid,
-							wwwRoot, uid);
+			out.println(RSSFOOTER);
+			out.close();
+		} finally {
+			rs.close();
 		}
-		out.println(RSSFOOTER);
-		out.close();
 	}
 
+	/**
+	 * @param c
+	 * @param filename
+	 * @throws FileNotFoundException
+	 * @throws SQLException
+	 */
 	private void handleStatus(Connection c, String filename)
 			throws FileNotFoundException, SQLException {
 		PrintStream ps = new PrintStream(filename);
@@ -348,17 +371,20 @@ public class WebpageGenerator implements Runnable {
 			throws SQLException {
 		HashMap<String, ServiceStatus> map = new HashMap<String, ServiceStatus>();
 		Statement s = c.createStatement();
-		ResultSet rs = s
-				.executeQuery("select status_team,status_service,status_text,status_verboseerror,status_color from states");
-		while (rs.next()) {
-			String team = rs.getString(1);
-			String service = rs.getString(2);
-			ServiceStatus status = new ServiceStatus(rs.getString(3), rs
-					.getString(4), rs.getString(5));
-			map.put(team + " " + service, status);
+		try {
+			ResultSet rs = s
+					.executeQuery("select status_team,status_service,status_text,status_verboseerror,status_color from states");
+			while (rs.next()) {
+				String team = rs.getString(1);
+				String service = rs.getString(2);
+				ServiceStatus status = new ServiceStatus(rs.getString(3), rs
+						.getString(4), rs.getString(5));
+				map.put(team + " " + service, status);
+			}
+			rs.close();
+		} finally {
+			s.close();
 		}
-		rs.close();
-		s.close();
 		return map;
 	}
 
@@ -377,157 +403,180 @@ public class WebpageGenerator implements Runnable {
 
 	private String[] getTeams(Connection c) throws SQLException {
 		Statement s = c.createStatement();
-		ResultSet rs = s
-				.executeQuery("select team_name from teams order by uid");
-		ArrayList<String> teams = new ArrayList<String>(10);
-		while (rs.next()) {
-			teams.add(rs.getString(1));
+		ArrayList<String> teams;
+		try {
+			ResultSet rs = s
+					.executeQuery("select team_name from teams order by uid");
+			teams = new ArrayList<String>(10);
+			while (rs.next()) {
+				teams.add(rs.getString(1));
+			}
+			rs.close();
+		} finally {
+			s.close();
 		}
-		rs.close();
-		s.close();
 		return teams.toArray(new String[0]);
 	}
 
 	private void handleAdvisories(Connection c, String string)
 			throws SQLException, FileNotFoundException {
 		Statement s = c.createStatement();
-		ResultSet rs = s
-				.executeQuery("select uid,advisory_description,advisory_team,advisory_status,advisory_comment from advisories where advisory_generated=false");
-		ArrayList<Long> tbu = new ArrayList<Long>(50);
-		while (rs.next()) {
-			Long uid = rs.getLong(1);
-			String desc = rs.getString(2);
-			String team = rs.getString(3);
-			String status = rs.getString(4);
-			String comment = rs.getString(5);
-			boolean pending = "pending".equals(status);
-			// Add all non-pending advisories to a list
-			// so they are not re-generated later.
-			if (!pending) {
-				tbu.add(uid);
-			}
-			PrintStream ps = new PrintStream(string + "/adv/a_" + uid + ".html");
-			ps.print(String.format(htmlHEADER, "Advisory # " + uid));
-			ps.print("<h1>Advisory #" + uid + "</h1>");
-			ps.print("<h2>From team " + HTMLFilter.filter(team) + "</h2>");
-			ps.print("<p>");
-			ps.print(HTMLFilter.filter(desc).replace("\n", "<br />"));
-			ps.print("</p>");
-			if (!pending) {
-				ps.print("<h2>Rating</h2>");
-				ps.print("<p>");
-				ps.print(HTMLFilter.filter(comment).replace("\n", "<br />"));
-				ps.print("</p>");
-			}
-			ps
-					.print("<p><a href=\"../adv.html\" onclick=\"javascript:history.goback();return false;\">Go back</a></p>");
-			ps.print(htmlSIMPLEFOOTER);
-			ps.close();
-		}
-		rs.close();
-		for (Long uid : tbu) {
-			s
-					.executeUpdate("update advisories set advisory_generated=true where uid="
-							+ uid);
-		}
-		PrintStream ps = new PrintStream(string + "/adv.html");
-		PrintStream ps2 = new PrintStream(string + "/pending.html");
-		ps.print(String.format(htmlHEADER, "Advisories"));
-		ps2.print(String.format(htmlHEADER, "Pending Advisories"));
-		ps.print("<h1>List of advisories</h1>");
-		ps2.print("<h1>List of pending advisories</h1>");
-		rs = s.executeQuery("select uid,advisory_team,advisory_description,"
-				+ "advisory_status,advisory_comment from advisories order"
-				+ " by uid desc");
-		ps.print("<table><tr><th>Team</th><th style=\"text-align: "
-				+ "left\">Advisory</th>"
-				+ "<th>Status</th><th>Rating</th></tr>");
-		ps2.print("<table><tr><th>Team</th><th style=\"text-align: "
-				+ "left\">Advisory</th>"
-				+ "<th>Status</th><th>Rating</th></tr>");
-		while (rs.next()) {
-			long uid = rs.getLong(1);
-			String team = rs.getString(2);
-			String desc = rs.getString(3);
-			String status = rs.getString(4);
-			String comment = rs.getString(5);
-			PrintStream s_p = ("pending".equals(status)) ? ps2 : ps;
-			s_p.print("<tr><td>");
-			s_p.print(HTMLFilter.filter(team));
-			s_p.print("</td><td style=\"width: 400px\">");
-			String d = null;
+		try {
+			ResultSet rs = s
+					.executeQuery("select uid,advisory_description,advisory_team,advisory_status,advisory_comment from advisories where advisory_generated=false");
+			ArrayList<Long> tbu = new ArrayList<Long>(50);
 			try {
-				int pos = desc.indexOf("New advisory by");
-				if (pos != -1) {
-					desc = desc.substring(pos);
+				while (rs.next()) {
+					Long uid = rs.getLong(1);
+					String desc = rs.getString(2);
+					String team = rs.getString(3);
+					String status = rs.getString(4);
+					String comment = rs.getString(5);
+					boolean pending = "pending".equals(status);
+					// Add all non-pending advisories to a list
+					// so they are not re-generated later.
+					if (!pending) {
+						tbu.add(uid);
+					}
+					PrintStream ps = new PrintStream(string + "/adv/a_" + uid
+							+ ".html");
+					ps.print(String.format(htmlHEADER, "Advisory # " + uid));
+					ps.print("<h1>Advisory #" + uid + "</h1>");
+					ps.print("<h2>From team " + HTMLFilter.filter(team)
+							+ "</h2>");
+					ps.print("<p>");
+					ps.print(HTMLFilter.filter(desc).replace("\n", "<br />"));
+					ps.print("</p>");
+					if (!pending) {
+						ps.print("<h2>Rating</h2>");
+						ps.print("<p>");
+						ps.print(HTMLFilter.filter(comment).replace("\n",
+								"<br />"));
+						ps.print("</p>");
+					}
+					ps
+							.print("<p><a href=\"../adv.html\" onclick=\"javascript:history.goback();return false;\">Go back</a></p>");
+					ps.print(htmlSIMPLEFOOTER);
+					ps.close();
 				}
-				d = HTMLFilter.filter(desc);
-				String[] descParts = d.split("\n");
-				d = "<strong>BY</strong>: " + descParts[0].split(":")[1]
-						+ "  <strong>service</strong>: "
-						+ descParts[1].split(":")[1]
-						+ "   <strong>severity</strong>: "
-						+ descParts[2].split(":")[1];
-			} catch (Throwable t) {
+			} finally {
+				rs.close();
 			}
-			if (d == null) {
-				d = "NO DESC";
+			for (Long uid : tbu) {
+				s
+						.executeUpdate("update advisories set advisory_generated=true where uid="
+								+ uid);
 			}
-			if (d.length() > 128) {
-				d = d.substring(0, 128);
+			PrintStream ps = new PrintStream(string + "/adv.html");
+			PrintStream ps2 = new PrintStream(string + "/pending.html");
+			ps.print(String.format(htmlHEADER, "Advisories"));
+			ps2.print(String.format(htmlHEADER, "Pending Advisories"));
+			ps.print("<h1>List of advisories</h1>");
+			ps2.print("<h1>List of pending advisories</h1>");
+			ps.print("<table><tr><th>Team</th><th style=\"text-align: "
+					+ "left\">Advisory</th>"
+					+ "<th>Status</th><th>Rating</th></tr>");
+			ps2.print("<table><tr><th>Team</th><th style=\"text-align: "
+					+ "left\">Advisory</th>"
+					+ "<th>Status</th><th>Rating</th></tr>");
+			rs = s
+					.executeQuery("select uid,advisory_team,advisory_description,"
+							+ "advisory_status,advisory_comment from advisories order"
+							+ " by uid desc");
+			try {
+				while (rs.next()) {
+					long uid = rs.getLong(1);
+					String team = rs.getString(2);
+					String desc = rs.getString(3);
+					String status = rs.getString(4);
+					String comment = rs.getString(5);
+					PrintStream s_p = ("pending".equals(status)) ? ps2 : ps;
+					s_p.print("<tr><td>");
+					s_p.print(HTMLFilter.filter(team));
+					s_p.print("</td><td style=\"width: 400px\">");
+					String d = null;
+					try {
+						int pos = desc.indexOf("New advisory by");
+						if (pos != -1) {
+							desc = desc.substring(pos);
+						}
+						d = HTMLFilter.filter(desc);
+						String[] descParts = d.split("\n");
+						d = "<strong>BY</strong>: "
+								+ descParts[0].split(":")[1]
+								+ "  <strong>service</strong>: "
+								+ descParts[1].split(":")[1]
+								+ "   <strong>severity</strong>: "
+								+ descParts[2].split(":")[1];
+					} catch (Throwable t) {
+					}
+					if (d == null) {
+						d = "NO DESC";
+					}
+					if (d.length() > 128) {
+						d = d.substring(0, 128);
+					}
+					s_p.print(d);
+					s_p.print(" (<a href=\"adv/a_" + uid
+							+ ".html\">details</a>)");
+					s_p.print("</td><td>");
+					s_p.print(HTMLFilter.filter(status));
+					s_p.print("</td><td style=\"width: 250px\">");
+					s_p.print(HTMLFilter.filter((comment != null) ? comment
+							: ""));
+					s_p.print("</td></tr>");
+				}
+			} finally {
+				rs.close();
 			}
-			s_p.print(d);
-			s_p.print(" (<a href=\"adv/a_" + uid + ".html\">details</a>)");
-			s_p.print("</td><td>");
-			s_p.print(HTMLFilter.filter(status));
-			s_p.print("</td><td style=\"width: 250px\">");
-			s_p.print(HTMLFilter.filter((comment != null) ? comment : ""));
-			s_p.print("</td></tr>");
+			ps.print("</table>");
+			ps.print(htmlFOOTER);
+			ps2.print("</table>");
+			ps2.print(htmlFOOTER);
+			ps.close();
+			ps2.close();
+		} finally {
+			s.close();
 		}
-		ps.print("</table>");
-		ps.print(htmlFOOTER);
-		ps2.print("</table>");
-		ps2.print(htmlFOOTER);
-		rs.close();
-		ps.close();
-		ps2.close();
-		s.close();
 	}
 
 	private void handleRank(Connection c, String string)
 			throws FileNotFoundException, SQLException {
 		PrintStream ps = new PrintStream(string);
 		Statement s = c.createStatement();
-		ResultSet rs = s
-				.executeQuery("select uid,team_name,team_points_offensive,team_points_defensive,team_points_advisories,team_points_hacking from teams");
 		ArrayList<TeamPoints> teams = new ArrayList<TeamPoints>(20);
 		int max_o = 1;
 		int max_d = 1;
 		int max_a = 1;
 		int max_h = 1;
-		while (rs.next()) {
-			int off = rs.getInt(3);
-			int def = rs.getInt(4);
-			int adv = rs.getInt(5);
-			int hac = rs.getInt(6);
-			TeamPoints team = new TeamPoints(rs.getLong(1), rs.getString(2),
-					off, def, adv, hac);
-			teams.add(team);
-			if (max_o < off) {
-				max_o = off;
+		try {
+			ResultSet rs = s
+					.executeQuery("select uid,team_name,team_points_offensive,team_points_defensive,team_points_advisories,team_points_hacking from teams");
+			while (rs.next()) {
+				int off = rs.getInt(3);
+				int def = rs.getInt(4);
+				int adv = rs.getInt(5);
+				int hac = rs.getInt(6);
+				TeamPoints team = new TeamPoints(rs.getLong(1),
+						rs.getString(2), off, def, adv, hac);
+				teams.add(team);
+				if (max_o < off) {
+					max_o = off;
+				}
+				if (max_d < def) {
+					max_d = def;
+				}
+				if (max_a < adv) {
+					max_a = adv;
+				}
+				if (max_h < hac) {
+					max_h = hac;
+				}
 			}
-			if (max_d < def) {
-				max_d = def;
-			}
-			if (max_a < adv) {
-				max_a = adv;
-			}
-			if (max_h < hac) {
-				max_h = hac;
-			}
+			rs.close();
+		} finally {
+			s.close();
 		}
-		rs.close();
-		s.close();
 
 		TreeSet<TeamPoints> orderedTeams = new TreeSet<TeamPoints>();
 		for (TeamPoints team : teams) {
@@ -648,196 +697,207 @@ public class WebpageGenerator implements Runnable {
 			throws FileNotFoundException, SQLException {
 		PrintStream out = new PrintStream(filename);
 		Statement s = c.createStatement();
-		ResultSet rs;
-
-		HashMap<String, Long> teamMap = new HashMap<String, Long>();
-
-		out.printf(XMLHEADER, System.currentTimeMillis() / 1000);
-
-		out.println("  <teams>");
-		rs = s.executeQuery("select uid,team_name from teams order by uid");
 		try {
-			while (rs.next()) {
-				long uid = rs.getLong(1);
-				String teamName = rs.getString(2);
-				out.printf("    <team id=\"%d\" name=\"%s\" />\n", uid,
-						HTMLFilter.filter(teamName));
-				teamMap.put(teamName, uid);
+			ResultSet rs;
+
+			HashMap<String, Long> teamMap = new HashMap<String, Long>();
+
+			out.printf(XMLHEADER, System.currentTimeMillis() / 1000);
+
+			out.println("  <teams>");
+			rs = s.executeQuery("select uid,team_name from teams order by uid");
+			try {
+				while (rs.next()) {
+					long uid = rs.getLong(1);
+					String teamName = rs.getString(2);
+					out.printf("    <team id=\"%d\" name=\"%s\" />\n", uid,
+							HTMLFilter.filter(teamName));
+					teamMap.put(teamName, uid);
+				}
+			} finally {
+				rs.close();
 			}
-		} finally {
-			rs.close();
-		}
-		out.println("  </teams>");
+			out.println("  </teams>");
 
-		StatCounter<String> lostFlags = new StatCounter<String>();
-		StatCounter<String> capturedFlags = new StatCounter<String>();
-		StatCounter<String> serviceFlags = new StatCounter<String>();
-		StatCounter<StringPair> lostFlagsPerService = new StatCounter<StringPair>();
-		StatCounter<StringPair> capturedFlagsPerService = new StatCounter<StringPair>();
-		rs = s
-				.executeQuery("select flag_fromteam,flag_collectingteam,flag_service from flagstats");
-		try {
-			while (rs.next()) {
-				String fromTeam = rs.getString(1);
-				String collectingTeam = rs.getString(2);
-				String service = rs.getString(3);
-				lostFlags.count(fromTeam);
-				capturedFlags.count(collectingTeam);
-				serviceFlags.count(service);
-				lostFlagsPerService.count(new StringPair(fromTeam, service));
-				capturedFlagsPerService.count(new StringPair(collectingTeam,
-						service));
+			StatCounter<String> lostFlags = new StatCounter<String>();
+			StatCounter<String> capturedFlags = new StatCounter<String>();
+			StatCounter<String> serviceFlags = new StatCounter<String>();
+			StatCounter<StringPair> lostFlagsPerService = new StatCounter<StringPair>();
+			StatCounter<StringPair> capturedFlagsPerService = new StatCounter<StringPair>();
+			rs = s
+					.executeQuery("select flag_fromteam,flag_collectingteam,flag_service from flagstats");
+			try {
+				while (rs.next()) {
+					String fromTeam = rs.getString(1);
+					String collectingTeam = rs.getString(2);
+					String service = rs.getString(3);
+					lostFlags.count(fromTeam);
+					capturedFlags.count(collectingTeam);
+					serviceFlags.count(service);
+					lostFlagsPerService
+							.count(new StringPair(fromTeam, service));
+					capturedFlagsPerService.count(new StringPair(
+							collectingTeam, service));
+				}
+			} finally {
+				rs.close();
 			}
-		} finally {
-			rs.close();
-		}
 
-		ArrayList<String> serviceNames = new ArrayList<String>(20);
-		rs = s.executeQuery("select service_name from services order by uid");
-		while (rs.next()) {
-			serviceNames.add(rs.getString(1));
-		}
-		rs.close();
-
-		out.println("  <teamdata>");
-		rs = s
-				.executeQuery("select uid,team_host,team_name from teams order by uid");
-		try {
+			ArrayList<String> serviceNames = new ArrayList<String>(20);
+			rs = s
+					.executeQuery("select service_name from services order by uid");
 			while (rs.next()) {
-				long uid = rs.getLong(1);
-				String teamHost = rs.getString(2);
-				String teamName = rs.getString(3);
-				out.printf("    <team id=\"%d\">\n", uid);
-				out.printf("      <property key=\"host\" value=\"%s\" />\n",
-						teamHost);
-				out.printf(
-						"      <property key=\"lostFlags\" value=\"%d\" />\n",
-						lostFlags.getCount(teamName));
-				out
-						.printf(
-								"      <property key=\"capturedFlags\" values=\"%d\" />\n",
-								capturedFlags.getCount(teamName));
-				out.println("      <detailedStats>");
-				for (String serviceName : serviceNames) {
+				serviceNames.add(rs.getString(1));
+			}
+			rs.close();
+
+			out.println("  <teamdata>");
+			rs = s
+					.executeQuery("select uid,team_host,team_name from teams order by uid");
+			try {
+				while (rs.next()) {
+					long uid = rs.getLong(1);
+					String teamHost = rs.getString(2);
+					String teamName = rs.getString(3);
+					out.printf("    <team id=\"%d\">\n", uid);
+					out.printf(
+							"      <property key=\"host\" value=\"%s\" />\n",
+							teamHost);
 					out
 							.printf(
-									"        <count type=\"capturedFlags\" subject=\"%s\" value=\"%d\" />\n",
-									serviceName, capturedFlagsPerService
-											.getCount(new StringPair(teamName,
-													serviceName)));
+									"      <property key=\"lostFlags\" value=\"%d\" />\n",
+									lostFlags.getCount(teamName));
 					out
 							.printf(
-									"        <count type=\"lostFlags\" subject=\"%s\" value=\"%d\" />\n",
-									serviceName, lostFlagsPerService
-											.getCount(new StringPair(teamName,
-													serviceName)));
+									"      <property key=\"capturedFlags\" values=\"%d\" />\n",
+									capturedFlags.getCount(teamName));
+					out.println("      <detailedStats>");
+					for (String serviceName : serviceNames) {
+						out
+								.printf(
+										"        <count type=\"capturedFlags\" subject=\"%s\" value=\"%d\" />\n",
+										serviceName, capturedFlagsPerService
+												.getCount(new StringPair(
+														teamName, serviceName)));
+						out
+								.printf(
+										"        <count type=\"lostFlags\" subject=\"%s\" value=\"%d\" />\n",
+										serviceName, lostFlagsPerService
+												.getCount(new StringPair(
+														teamName, serviceName)));
+					}
+					out.println("      </detailedStats>");
+					out.println("    </team>");
 				}
-				out.println("      </detailedStats>");
-				out.println("    </team>");
+				out.println("  </teamdata>");
+			} finally {
+				rs.close();
 			}
-			out.println("  </teamdata>");
-		} finally {
-			rs.close();
-		}
 
-		out.println("  <scoreblock>");
-		rs = s
-				.executeQuery("select uid,team_points_offensive,team_points_defensive,"
-						+ "team_points_advisories,team_points_hacking from teams order by uid");
-		try {
-			while (rs.next()) {
-				long uid = rs.getLong(1);
-				int off = rs.getInt(2);
-				int def = rs.getInt(3);
-				int adv = rs.getInt(4);
-				int hak = rs.getInt(5);
-				out.printf("    <team id=\"%d\">\n", uid);
-				out.printf(
-						"      <points type=\"offensive\" value=\"%d\" />\n",
-						off);
-				out.printf(
-						"      <points type=\"defensive\" value=\"%d\" />\n",
-						def);
-				out.printf("      <points type=\"advisory\" value=\"%d\" />\n",
-						adv);
-				out.printf("      <points type=\"hacking\" value=\"%d\" />\n",
-						hak);
-				out.println("    </team>");
-			}
-		} finally {
-			rs.close();
-		}
-		out.println("  </scoreblock>");
-
-		out.println("  <services>");
-		rs = s
-				.executeQuery("select uid,service_name from services order by uid");
-		try {
-			while (rs.next()) {
-				long uid = rs.getLong(1);
-				String s_name = rs.getString(2);
-				out
-						.printf("    <service id=\"%d\" name=\"%s\">\n", uid,
-								s_name);
-				out.printf(
-						"      <stat type=\"capturedFlags\" value=\"%d\" />\n",
-						serviceFlags.getCount(s_name));
-				out.println("    </service>");
-			}
-			out.println("  </services>");
-		} finally {
-			rs.close();
-		}
-
-		StringBuilder sb = new StringBuilder();
-		sb.append("  <ranking order=\"");
-		boolean firstEntry = true;
-		for (Long uid : ranks) {
-			if (!firstEntry) {
-				sb.append(":");
-			} else {
-				firstEntry = false;
-			}
-			sb.append(uid);
-		}
-		sb.append("\" />");
-		out.println(sb);
-
-		out.println("  <advisories>");
-		rs = s
-				.executeQuery("select uid,advisory_team,advisory_description,"
-						+ "advisory_status,advisory_time,advisory_comment,advisory_from"
-						+ " from advisories order by uid");
-		try {
-			while (rs.next()) {
-				long uid = rs.getLong(1);
-				String advTeam = escape(rs.getString(2));
-				String advDesc = escape(rs.getString(3));
-				String advStatus = escape(rs.getString(4));
-				long advTime = rs.getLong(5);
-				String advComment = escape(rs.getString(6));
-				String advFrom = escape(rs.getString(7));
-
-				Long teamID = teamMap.get(advTeam);
-				if (teamID == null) {
-					teamID = Long.valueOf(-1);
+			out.println("  <scoreblock>");
+			rs = s
+					.executeQuery("select uid,team_points_offensive,team_points_defensive,"
+							+ "team_points_advisories,team_points_hacking from teams order by uid");
+			try {
+				while (rs.next()) {
+					long uid = rs.getLong(1);
+					int off = rs.getInt(2);
+					int def = rs.getInt(3);
+					int adv = rs.getInt(4);
+					int hak = rs.getInt(5);
+					out.printf("    <team id=\"%d\">\n", uid);
+					out
+							.printf(
+									"      <points type=\"offensive\" value=\"%d\" />\n",
+									off);
+					out
+							.printf(
+									"      <points type=\"defensive\" value=\"%d\" />\n",
+									def);
+					out
+							.printf(
+									"      <points type=\"advisory\" value=\"%d\" />\n",
+									adv);
+					out.printf(
+							"      <points type=\"hacking\" value=\"%d\" />\n",
+							hak);
+					out.println("    </team>");
 				}
-				out
-						.printf(
-								"    <advisory id=\"%d\" team=\"%d\" status=\"%s\" awardedpoints=\"0\" "
-										+ "comment=\"%s\" time=\"%d\" service=\"%s\">%s</advisory>\n",
-								uid, teamID, advStatus, advComment, advTime,
-								advFrom, advDesc);
+			} finally {
+				rs.close();
 			}
+			out.println("  </scoreblock>");
+
+			out.println("  <services>");
+			rs = s
+					.executeQuery("select uid,service_name from services order by uid");
+			try {
+				while (rs.next()) {
+					long uid = rs.getLong(1);
+					String s_name = rs.getString(2);
+					out.printf("    <service id=\"%d\" name=\"%s\">\n", uid,
+							s_name);
+					out
+							.printf(
+									"      <stat type=\"capturedFlags\" value=\"%d\" />\n",
+									serviceFlags.getCount(s_name));
+					out.println("    </service>");
+				}
+				out.println("  </services>");
+			} finally {
+				rs.close();
+			}
+
+			StringBuilder sb = new StringBuilder();
+			sb.append("  <ranking order=\"");
+			boolean firstEntry = true;
+			for (Long uid : ranks) {
+				if (!firstEntry) {
+					sb.append(":");
+				} else {
+					firstEntry = false;
+				}
+				sb.append(uid);
+			}
+			sb.append("\" />");
+			out.println(sb);
+
+			out.println("  <advisories>");
+			rs = s
+					.executeQuery("select uid,advisory_team,advisory_description,"
+							+ "advisory_status,advisory_time,advisory_comment,advisory_from"
+							+ " from advisories order by uid");
+			try {
+				while (rs.next()) {
+					long uid = rs.getLong(1);
+					String advTeam = escape(rs.getString(2));
+					String advDesc = escape(rs.getString(3));
+					String advStatus = escape(rs.getString(4));
+					long advTime = rs.getLong(5);
+					String advComment = escape(rs.getString(6));
+					String advFrom = escape(rs.getString(7));
+
+					Long teamID = teamMap.get(advTeam);
+					if (teamID == null) {
+						teamID = Long.valueOf(-1);
+					}
+					out
+							.printf(
+									"    <advisory id=\"%d\" team=\"%d\" status=\"%s\" awardedpoints=\"0\" "
+											+ "comment=\"%s\" time=\"%d\" service=\"%s\">%s</advisory>\n",
+									uid, teamID, advStatus, advComment,
+									advTime, advFrom, advDesc);
+				}
+			} finally {
+				rs.close();
+			}
+			out.println("  </advisories>");
+
+			out.println(XMLFOOTER);
+			out.close();
 		} finally {
-			rs.close();
+			s.close();
 		}
-		out.println("  </advisories>");
-
-		out.println(XMLFOOTER);
-		out.close();
-
-		s.close();
 	}
 
 	private static String escape(String s) {
