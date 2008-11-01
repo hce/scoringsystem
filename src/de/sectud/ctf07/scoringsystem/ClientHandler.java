@@ -794,6 +794,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 				s.execute("delete from services");
 				s.execute("alter sequence teams_uid_seq restart 1");
 				s.execute("alter sequence services_uid_seq restart 1");
+				s.execute("delete from states");
 			} finally {
 				s.close();
 			}
