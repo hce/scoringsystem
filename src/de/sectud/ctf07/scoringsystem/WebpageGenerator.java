@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -233,6 +234,7 @@ public class WebpageGenerator implements Runnable {
 			handleRank(c, wwwPath + "/rank.html");
 			handleAdvisories(c, wwwPath);
 			handleStatus(c, wwwPath + "/status.html");
+			updateStatsTables(c);
 			iteration--;
 			if (iteration <= 0) {
 				generateXMLFile(c, "scoringdata.xml");
@@ -568,6 +570,80 @@ public class WebpageGenerator implements Runnable {
 		ps.close();
 	}
 
+	/**
+	 * Update the stats tables used by spida's ctf-vis (http://www.spida.net)
+	 * 
+	 * @throws SQLException
+	 */
+	private void updateStatsTables(Connection c) throws SQLException {
+		long curTime = System.currentTimeMillis() / 1000;
+		PreparedStatement ps = c
+				.prepareStatement("insert into stats_times (stats_time) values (?)");
+		try {
+			ps.setLong(1, curTime);
+			ps.execute();
+		} finally {
+			ps.close();
+		}
+		Statement s = c.createStatement();
+		try {
+			/* Store the current points in the stats table */
+			ResultSet rs = s
+					.executeQuery("select team_name,team_points_offensive,team_points_defensive,team_points_advisories,team_points_hacking from teams");
+			ps = c
+					.prepareStatement("insert into stats_points (stats_time,"
+							+ "stats_team,stats_points_defensive,stats_points_offensive,"
+							+ "stats_points_advisory,stats_points_rulecompliance)"
+							+ " values (?,?,?,?,?,?)");
+			try {
+				while (rs.next()) {
+					String d1 = rs.getString(1);
+					int d2 = rs.getInt(2);
+					int d3 = rs.getInt(3);
+					int d4 = rs.getInt(4);
+					int d5 = rs.getInt(5);
+					ps.setLong(1, curTime);
+					ps.setString(2, d1);
+					ps.setInt(3, d2);
+					ps.setInt(4, d3);
+					ps.setInt(5, d4);
+					ps.setInt(6, d5);
+					ps.execute();
+				}
+			} finally {
+				rs.close();
+				ps.close();
+			}
+
+			/* Store the current service states in the stats table */
+			rs = s.executeQuery("select status_team,status_service,"
+					+ "status_text,status_verboseerror from states");
+			ps = c.prepareStatement("insert into stats_services (stats_time,"
+					+ "stats_team,stats_service,stats_status,stats_statusmsg) "
+					+ "values (?,?,?,?,?)");
+			try {
+				while (rs.next()) {
+					String d1 = rs.getString(1);
+					String d2 = rs.getString(2);
+					String d3 = rs.getString(3);
+					String d4 = rs.getString(4);
+					ps.setLong(1, curTime);
+					ps.setString(2, d1);
+					ps.setString(3, d2);
+					ps.setString(4, d3);
+					ps.setString(5, d4);
+					ps.execute();
+				}
+			} finally {
+				rs.close();
+				ps.close();
+			}
+		} finally {
+			s.close();
+		}
+
+	}
+
 	private void generateXMLFile(Connection c, String filename)
 			throws FileNotFoundException, SQLException {
 		PrintStream out = new PrintStream(filename);
@@ -580,14 +656,17 @@ public class WebpageGenerator implements Runnable {
 
 		out.println("  <teams>");
 		rs = s.executeQuery("select uid,team_name from teams order by uid");
-		while (rs.next()) {
-			long uid = rs.getLong(1);
-			String teamName = rs.getString(2);
-			out.printf("    <team id=\"%d\" name=\"%s\" />\n", uid, HTMLFilter
-					.filter(teamName));
-			teamMap.put(teamName, uid);
+		try {
+			while (rs.next()) {
+				long uid = rs.getLong(1);
+				String teamName = rs.getString(2);
+				out.printf("    <team id=\"%d\" name=\"%s\" />\n", uid,
+						HTMLFilter.filter(teamName));
+				teamMap.put(teamName, uid);
+			}
+		} finally {
+			rs.close();
 		}
-		rs.close();
 		out.println("  </teams>");
 
 		StatCounter<String> lostFlags = new StatCounter<String>();
@@ -597,18 +676,21 @@ public class WebpageGenerator implements Runnable {
 		StatCounter<StringPair> capturedFlagsPerService = new StatCounter<StringPair>();
 		rs = s
 				.executeQuery("select flag_fromteam,flag_collectingteam,flag_service from flagstats");
-		while (rs.next()) {
-			String fromTeam = rs.getString(1);
-			String collectingTeam = rs.getString(2);
-			String service = rs.getString(3);
-			lostFlags.count(fromTeam);
-			capturedFlags.count(collectingTeam);
-			serviceFlags.count(service);
-			lostFlagsPerService.count(new StringPair(fromTeam, service));
-			capturedFlagsPerService.count(new StringPair(collectingTeam,
-					service));
+		try {
+			while (rs.next()) {
+				String fromTeam = rs.getString(1);
+				String collectingTeam = rs.getString(2);
+				String service = rs.getString(3);
+				lostFlags.count(fromTeam);
+				capturedFlags.count(collectingTeam);
+				serviceFlags.count(service);
+				lostFlagsPerService.count(new StringPair(fromTeam, service));
+				capturedFlagsPerService.count(new StringPair(collectingTeam,
+						service));
+			}
+		} finally {
+			rs.close();
 		}
-		rs.close();
 
 		ArrayList<String> serviceNames = new ArrayList<String>(20);
 		rs = s.executeQuery("select service_name from services order by uid");
@@ -620,77 +702,92 @@ public class WebpageGenerator implements Runnable {
 		out.println("  <teamdata>");
 		rs = s
 				.executeQuery("select uid,team_host,team_name from teams order by uid");
-		while (rs.next()) {
-			long uid = rs.getLong(1);
-			String teamHost = rs.getString(2);
-			String teamName = rs.getString(3);
-			out.printf("    <team id=\"%d\">\n", uid);
-			out.printf("      <property key=\"host\" value=\"%s\" />\n",
-					teamHost);
-			out.printf("      <property key=\"lostFlags\" value=\"%d\" />\n",
-					lostFlags.getCount(teamName));
-			out.printf(
-					"      <property key=\"capturedFlags\" values=\"%d\" />\n",
-					capturedFlags.getCount(teamName));
-			out.println("      <detailedStats>");
-			for (String serviceName : serviceNames) {
+		try {
+			while (rs.next()) {
+				long uid = rs.getLong(1);
+				String teamHost = rs.getString(2);
+				String teamName = rs.getString(3);
+				out.printf("    <team id=\"%d\">\n", uid);
+				out.printf("      <property key=\"host\" value=\"%s\" />\n",
+						teamHost);
+				out.printf(
+						"      <property key=\"lostFlags\" value=\"%d\" />\n",
+						lostFlags.getCount(teamName));
 				out
 						.printf(
-								"        <count type=\"capturedFlags\" subject=\"%s\" value=\"%d\" />\n",
-								serviceName, capturedFlagsPerService
-										.getCount(new StringPair(teamName,
-												serviceName)));
-				out
-						.printf(
-								"        <count type=\"lostFlags\" subject=\"%s\" value=\"%d\" />\n",
-								serviceName, lostFlagsPerService
-										.getCount(new StringPair(teamName,
-												serviceName)));
+								"      <property key=\"capturedFlags\" values=\"%d\" />\n",
+								capturedFlags.getCount(teamName));
+				out.println("      <detailedStats>");
+				for (String serviceName : serviceNames) {
+					out
+							.printf(
+									"        <count type=\"capturedFlags\" subject=\"%s\" value=\"%d\" />\n",
+									serviceName, capturedFlagsPerService
+											.getCount(new StringPair(teamName,
+													serviceName)));
+					out
+							.printf(
+									"        <count type=\"lostFlags\" subject=\"%s\" value=\"%d\" />\n",
+									serviceName, lostFlagsPerService
+											.getCount(new StringPair(teamName,
+													serviceName)));
+				}
+				out.println("      </detailedStats>");
+				out.println("    </team>");
 			}
-			out.println("      </detailedStats>");
-			out.println("    </team>");
+			out.println("  </teamdata>");
+		} finally {
+			rs.close();
 		}
-		out.println("  </teamdata>");
-		rs.close();
 
 		out.println("  <scoreblock>");
 		rs = s
 				.executeQuery("select uid,team_points_offensive,team_points_defensive,"
 						+ "team_points_advisories,team_points_hacking from teams order by uid");
-		while (rs.next()) {
-			long uid = rs.getLong(1);
-			int off = rs.getInt(2);
-			int def = rs.getInt(3);
-			int adv = rs.getInt(4);
-			int hak = rs.getInt(5);
-			out.printf("    <team id=\"%d\">\n", uid);
-			out.printf("      <points type=\"offensive\" value=\"%d\" />\n",
-					off);
-			out.printf("      <points type=\"defensive\" value=\"%d\" />\n",
-					def);
-			out
-					.printf(
-							"      <points type=\"advisory\" value=\"%d\" />\n",
-							adv);
-			out.printf("      <points type=\"hacking\" value=\"%d\" />\n", hak);
-			out.println("    </team>");
+		try {
+			while (rs.next()) {
+				long uid = rs.getLong(1);
+				int off = rs.getInt(2);
+				int def = rs.getInt(3);
+				int adv = rs.getInt(4);
+				int hak = rs.getInt(5);
+				out.printf("    <team id=\"%d\">\n", uid);
+				out.printf(
+						"      <points type=\"offensive\" value=\"%d\" />\n",
+						off);
+				out.printf(
+						"      <points type=\"defensive\" value=\"%d\" />\n",
+						def);
+				out.printf("      <points type=\"advisory\" value=\"%d\" />\n",
+						adv);
+				out.printf("      <points type=\"hacking\" value=\"%d\" />\n",
+						hak);
+				out.println("    </team>");
+			}
+		} finally {
+			rs.close();
 		}
-		rs.close();
 		out.println("  </scoreblock>");
 
 		out.println("  <services>");
 		rs = s
 				.executeQuery("select uid,service_name from services order by uid");
-		while (rs.next()) {
-			long uid = rs.getLong(1);
-			String s_name = rs.getString(2);
-			out.printf("    <service id=\"%d\" name=\"%s\">\n", uid, s_name);
-			out.printf("      <stat type=\"capturedFlags\" value=\"%d\" />\n",
-					serviceFlags.getCount(s_name));
-			out.println("    </service>");
+		try {
+			while (rs.next()) {
+				long uid = rs.getLong(1);
+				String s_name = rs.getString(2);
+				out
+						.printf("    <service id=\"%d\" name=\"%s\">\n", uid,
+								s_name);
+				out.printf(
+						"      <stat type=\"capturedFlags\" value=\"%d\" />\n",
+						serviceFlags.getCount(s_name));
+				out.println("    </service>");
+			}
+			out.println("  </services>");
+		} finally {
+			rs.close();
 		}
-		out.println("  </services>");
-		rs.close();
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("  <ranking order=\"");
@@ -711,30 +808,36 @@ public class WebpageGenerator implements Runnable {
 				.executeQuery("select uid,advisory_team,advisory_description,"
 						+ "advisory_status,advisory_time,advisory_comment,advisory_from"
 						+ " from advisories order by uid");
-		while (rs.next()) {
-			long uid = rs.getLong(1);
-			String advTeam = escape(rs.getString(2));
-			String advDesc = escape(rs.getString(3));
-			String advStatus = escape(rs.getString(4));
-			long advTime = rs.getLong(5);
-			String advComment = escape(rs.getString(6));
-			String advFrom = escape(rs.getString(7));
+		try {
+			while (rs.next()) {
+				long uid = rs.getLong(1);
+				String advTeam = escape(rs.getString(2));
+				String advDesc = escape(rs.getString(3));
+				String advStatus = escape(rs.getString(4));
+				long advTime = rs.getLong(5);
+				String advComment = escape(rs.getString(6));
+				String advFrom = escape(rs.getString(7));
 
-			Long teamID = teamMap.get(advTeam);
-			if (teamID == null) {
-				teamID = Long.valueOf(-1);
+				Long teamID = teamMap.get(advTeam);
+				if (teamID == null) {
+					teamID = Long.valueOf(-1);
+				}
+				out
+						.printf(
+								"    <advisory id=\"%d\" team=\"%d\" status=\"%s\" awardedpoints=\"0\" "
+										+ "comment=\"%s\" time=\"%d\" service=\"%s\">%s</advisory>\n",
+								uid, teamID, advStatus, advComment, advTime,
+								advFrom, advDesc);
 			}
-			out
-					.printf(
-							"    <advisory id=\"%d\" team=\"%d\" status=\"%s\" awardedpoints=\"0\" "
-									+ "comment=\"%s\" time=\"%d\" service=\"%s\">%s</advisory>\n",
-							uid, teamID, advStatus, advComment, advTime,
-							advFrom, advDesc);
+		} finally {
+			rs.close();
 		}
 		out.println("  </advisories>");
 
 		out.println(XMLFOOTER);
 		out.close();
+
+		s.close();
 	}
 
 	private static String escape(String s) {
