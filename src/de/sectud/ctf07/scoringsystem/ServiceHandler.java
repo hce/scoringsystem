@@ -423,9 +423,12 @@ public class ServiceHandler implements Runnable, QueueJob {
 				retCode = ss.getReturnCode();
 				errorMessage = ss.getStatusMessage();
 				hostID = ss.getExecutingHost();
-				if (retCode == RETCODE_TIMEOUT) {
+				if (RETCODE_TIMEOUT.equals(retCode)) {
 					reportServiceStatus(teamID, this.name, retCode,
 							errorMessage);
+					// Do not check any more flags if the flag retrieval
+					// attempt timed out.
+					return;
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -469,11 +472,6 @@ public class ServiceHandler implements Runnable, QueueJob {
 				ps.close();
 
 				reportServiceStatus(teamID, this.name, retCode, errorMessage);
-				if (RETCODE_TIMEOUT.equals(retCode)) {
-					// Do not check any more flags if the flag retrieval
-					// attempt timed out.
-					return;
-				}
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} finally {
