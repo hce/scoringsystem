@@ -200,7 +200,7 @@ public final class RemoteSubProcess implements SubProcess {
 	public static void main(String[] args) throws UnknownHostException,
 			IOException, ExecutionException {
 		RemoteSubProcess rsp = new RemoteSubProcess("salato.hcesperer.org",
-				60000, 0);
+				70000, 0);
 		System.out.println(rsp.checkonly());
 		rsp = new RemoteSubProcess("salato.hcesperer.org", 60000, 0);
 		System.out.println(rsp.check());

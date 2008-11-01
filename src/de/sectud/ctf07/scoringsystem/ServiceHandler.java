@@ -48,6 +48,7 @@ import java.util.Random;
 
 import org.hcesperer.utils.DBConnection;
 import org.hcesperer.utils.SQLConnection;
+import org.omg.PortableServer.REQUEST_PROCESSING_POLICY_ID;
 
 import de.sectud.ctf07.scoringsystem.Executor.Action;
 import de.sectud.ctf07.scoringsystem.ReturnCode.ErrorValues;
@@ -220,6 +221,11 @@ public class ServiceHandler implements Runnable, QueueJob {
 							DBConnection.getInstance().returnConnection(
 									connection);
 							connection = null;
+						}
+						if (RETCODE_TIMEOUT.equals(retCode)) {
+							// Do not store any more flags if this attempt
+							// timed out
+							return;
 						}
 					}
 
@@ -463,7 +469,11 @@ public class ServiceHandler implements Runnable, QueueJob {
 				ps.close();
 
 				reportServiceStatus(teamID, this.name, retCode, errorMessage);
-
+				if (RETCODE_TIMEOUT.equals(retCode)) {
+					// Do not check any more flags if the flag retrieval
+					// attempt timed out.
+					return;
+				}
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} finally {

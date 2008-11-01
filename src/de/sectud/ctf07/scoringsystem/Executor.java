@@ -110,7 +110,11 @@ public final class Executor {
 	public static ServiceStatus runSubprocess(String host, int hostNR,
 			String cmdLine) {
 		try {
-			RemoteSubProcess rsp = new RemoteSubProcess(host, TIMEOUT, hostNR);
+			// We must use a timeout _greater than the one specified_ here,
+			// because we must give the remote process the chance to report
+			// timeout, which it can't if we time out locally first.
+			RemoteSubProcess rsp = new RemoteSubProcess(host, TIMEOUT + 10000,
+					hostNR);
 			return rsp.runTestscript(cmdLine);
 		} catch (Throwable t) {
 			return null;
