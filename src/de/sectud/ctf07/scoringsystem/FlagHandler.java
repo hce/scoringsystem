@@ -68,6 +68,8 @@ public class FlagHandler implements Runnable {
 
 	private boolean halted = false;
 
+	private long nextRound;
+
 	public FlagHandler(ServiceHandler[] handlers) {
 		this.handlers = handlers;
 		setDistributeFlags(true);
@@ -202,6 +204,9 @@ public class FlagHandler implements Runnable {
 					flagHandler.contDist();
 					c.printf("Started flag distribution.\n");
 					break;
+				case 'i':
+					flagHandler.contImmed();
+					break;
 				case 'f':
 					if (!flagHandler.isHalted()) {
 						c
@@ -227,6 +232,10 @@ public class FlagHandler implements Runnable {
 				}
 			}
 		}
+	}
+
+	public void contImmed() {
+		nextRound = System.currentTimeMillis();
 	}
 
 	private boolean isHalted() {
@@ -256,7 +265,6 @@ public class FlagHandler implements Runnable {
 
 	public void run() {
 		long round = 0;
-		long nextRound;
 		System.out.printf("Using %d worker threads (control/numworkers)\n", qm
 				.getNumWorkers());
 		while (true) {
