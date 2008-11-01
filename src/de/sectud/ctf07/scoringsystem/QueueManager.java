@@ -106,7 +106,15 @@ public class QueueManager extends Thread {
 	 *         are already running.
 	 */
 	public synchronized boolean hasJobs() {
-		return jobs.size() != 0;
+		if (jobs.size() != 0) {
+			return true;
+		}
+		for (int i = 0; i < workers.length; i++) {
+			if (workers[i].hasJob()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -116,7 +124,17 @@ public class QueueManager extends Thread {
 	 * @return the number of pending jobs. This does *not* include already
 	 *         running jobs.
 	 */
-	public synchronized int numJobs() {
+	public synchronized int pendingJobs() {
 		return jobs.size();
+	}
+
+	public int runningJobs() {
+		int c = 0;
+		for (int i = 0; i < workers.length; i++) {
+			if (workers[i].hasJob()) {
+				c++;
+			}
+		}
+		return c;
 	}
 }

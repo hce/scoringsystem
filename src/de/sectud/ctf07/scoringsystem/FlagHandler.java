@@ -198,17 +198,16 @@ public class FlagHandler implements Runnable {
 		while (true) {
 			nextRound = System.currentTimeMillis() + 600000;
 			qm.addMass(this.handlers);
-			int numJobs = qm.numJobs();
-			while (numJobs > 0) {
-				System.out.printf("===== ROUND %d: %d jobs to do =====\n",
-						round, numJobs);
+			while (qm.hasJobs()) {
+				System.out.printf(
+						"===== ROUND %d: %d jobs pending, %d running =====\n",
+						round, qm.pendingJobs(), qm.runningJobs());
 				try {
 					Thread.sleep(10000);
 				} catch (InterruptedException e) {
 				}
-				numJobs = qm.numJobs();
 			}
-			System.out.printf("  ===== Round %d finished =====  \n", numJobs);
+			System.out.printf("  ===== Round %d finished =====  \n", round);
 			round++;
 			synchronized (this) {
 				if (this.distStop) {
