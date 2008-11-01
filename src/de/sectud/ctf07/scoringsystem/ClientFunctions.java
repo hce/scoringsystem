@@ -473,5 +473,13 @@ public enum ClientFunctions {
 	 * Delete all flags
 	 * </p>
 	 */
-	deleteflags
+	deleteflags,
+
+	/**
+	 * <h2>void cleardbs()</h2>
+	 * <p>
+	 * Delete all teams and services
+	 * </p>
+	 */
+	cleardbs
 }

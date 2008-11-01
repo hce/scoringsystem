@@ -396,7 +396,17 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 					writer.println("Error; couldn't clear stats tables");
 				}
 				return true;
-
+			case cleardbs:
+				if (!isAdmin) {
+					writer.println(permissionError);
+					return false;
+				}
+				if (clearDBs()) {
+					writer
+							.println("Teams and services deleted; counters reset");
+				} else {
+					writer.println("Error; check the console");
+				}
 			case zeropoints:
 				if (!isAdmin) {
 					writer.println(permissionError);
@@ -767,6 +777,27 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 		} catch (Throwable t) {
 			t.printStackTrace();
 			return false;
+		} finally {
+			DBConnection.getInstance().returnConnection(c);
+		}
+	}
+
+	private boolean clearDBs() throws SQLException {
+		if (!clearStatsTables()) {
+			return false;
+		}
+		Connection c = DBConnection.getInstance().getDB();
+		try {
+			Statement s = c.createStatement();
+			try {
+				s.execute("delete from teams");
+				s.execute("delete from services");
+				s.execute("alter sequence teams_uid_seq restart 1");
+				s.execute("alter sequence services_uid_seq restart 1");
+			} finally {
+				s.close();
+			}
+			return true;
 		} finally {
 			DBConnection.getInstance().returnConnection(c);
 		}
