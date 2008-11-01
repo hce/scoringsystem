@@ -48,6 +48,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -61,6 +62,7 @@ import net.sourceforge.adela.interpreter.ADELAParseTree;
 
 import org.hcesperer.utils.DBConnection;
 import org.hcesperer.utils.SQLConnection;
+import org.hcesperer.utils.djb.DJBSettings;
 
 public class ClientHandler extends Thread implements IFunctionCallback {
 
@@ -95,6 +97,24 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 	private HashMap<String, Object> locals;
 
 	private PrintStream logFile;
+
+	private static final String permissionError = DJBSettings.loadString(
+			"control/msgs/permissiondenied", "Requires admin privileges");
+
+	private static final String wrongPWD = DJBSettings.loadString(
+			"control/msgs/passwordincorrect", "Wrong password");
+
+	private static final String scorePrompt = DJBSettings.loadString(
+			"control/msgs/prompt", "scorebot");
+
+	private static final String txtHelp = DJBSettings
+			.loadText(
+					"control/msgs/motd",
+					"Welcome to the CTF scorebot 0.4.37\n"
+							+ "-----------------------------------------------------------------\n"
+							+ "type \"man.reportflag\", \"man.reportadvisory\", "
+							+ "\"man\",\n  \"copyright\" or "
+							+ "\"license\" for more information.");
 
 	private boolean printEvaluationParseTree;
 	static {
@@ -169,11 +189,6 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 				return;
 			}
 
-			String txtHelp = "Welcome to the CTF scorebot 0.4.37\n"
-					+ "-----------------------------------------------------------------\n"
-					+ "type \"man.reportflag\", \"man.reportadvisory\", "
-					+ "\"man\",\n  \"copyright\" or "
-					+ "\"license\" for more information.";
 			evaluator.SetVariable("help", txtHelp);
 			String txtCopyright = Stuff.TEXT_ATTRS_BOLD
 					+ "CTF scorebot 0.4.37\n"
@@ -183,8 +198,6 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 			evaluator.SetVariable("copyright", txtCopyright);
 
 			writer.println(txtHelp);
-			writer
-					.println("\nNOTE: Max. one connection per IP, max. 100 flags per connection,\nwait 5secs after re-connecting");
 			int exceptions = 0;
 			int iterations = 0;
 			// Object lastRetVal = null;
@@ -206,7 +219,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 					// if (rvDpl.charAt(0) == '\033') {
 					// rvDpl = "";
 					// }
-					writer.print("\r" + Stuff.beginPrompt() + "scorebot "
+					writer.print("\r" + Stuff.beginPrompt() + scorePrompt + " "
 					/* + rvDpl */+ (this.isAdmin ? "#" : ">")
 							+ Stuff.endPrompt() + " ");
 					String line = reader.readLine().trim();
@@ -372,6 +385,30 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 				writer.println("not allowed");
 				return false;
 
+			case clearstats:
+				if (!isAdmin) {
+					writer.println(permissionError);
+					return false;
+				}
+				if (clearStatsTables()) {
+					writer.println("Stats tables cleared.");
+				} else {
+					writer.println("Error; couldn't clear stats tables");
+				}
+				return true;
+
+			case zeropoints:
+				if (!isAdmin) {
+					writer.println(permissionError);
+					return false;
+				}
+				if (zeroPoints()) {
+					writer.println("All points reset to zero");
+				} else {
+					writer.println("Error; check the console");
+				}
+				return true;
+
 			case admin:
 				if (vParams.length > 1) {
 					throw new WrongParameterCountException(funcName, 1,
@@ -419,7 +456,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 				}
 				isAdmin = false;
 				Thread.sleep(2000);
-				writer.println("Login incorrect");
+				writer.println(wrongPWD);
 
 				if ((adminTriesLeft--) < 0) {
 					this.dontQuit = false;
@@ -432,7 +469,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 							vParams.length);
 				}
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				listAdvisories();
@@ -452,7 +489,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 
 			case reject:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 2) {
@@ -464,7 +501,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 				return true;
 			case accept:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 3) {
@@ -477,7 +514,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 
 			case genflags:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 2) {
@@ -488,7 +525,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 
 			case delete:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 1) {
@@ -500,7 +537,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 
 			case dechp:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 2) {
@@ -511,7 +548,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 				return true;
 			case inchp:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 2) {
@@ -523,7 +560,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 
 			case createteam:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 1) {
@@ -534,7 +571,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 
 			case getteam:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 1) {
@@ -555,7 +592,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 
 			case createservice:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 1) {
@@ -566,7 +603,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 
 			case getservice:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				if (vParams.length != 1) {
@@ -582,14 +619,14 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 			case listservices:
 			case ls:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 				return listServices();
 
 			case getclass:
 				if (!isAdmin) {
-					writer.println("Requires admin privileges!");
+					writer.println(permissionError);
 					return false;
 				}
 
@@ -662,6 +699,47 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 			writer.println("Error: " + e.getMessage());
 		}
 		return null;
+	}
+
+	private boolean zeroPoints() {
+		Connection c = DBConnection.getInstance().getDB();
+		try {
+			Statement s = c.createStatement();
+			try {
+				s.execute("update teams set team_points_offensive=0");
+				s.execute("update teams set team_points_defensive=0");
+				s.execute("update teams set team_points_advisories=0");
+				s.execute("update teams set team_points_hacking=0");
+				return true;
+			} finally {
+				s.close();
+			}
+		} catch (Throwable t) {
+			t.printStackTrace();
+			return false;
+		} finally {
+			DBConnection.getInstance().returnConnection(c);
+		}
+	}
+
+	private boolean clearStatsTables() {
+		Connection c = DBConnection.getInstance().getDB();
+		try {
+			Statement s = c.createStatement();
+			try {
+				s.execute("delete from stats_points");
+				s.execute("delete from stats_services");
+				s.execute("delete from stats_times");
+				return true;
+			} finally {
+				s.close();
+			}
+		} catch (Throwable t) {
+			t.printStackTrace();
+			return false;
+		} finally {
+			DBConnection.getInstance().returnConnection(c);
+		}
 	}
 
 	private boolean listServices() {

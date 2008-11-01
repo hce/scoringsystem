@@ -448,5 +448,22 @@ public enum ClientFunctions {
 	 * not really useful feature, except for educational purposes :P
 	 * </p>
 	 */
-	tree
+	tree,
+
+	/**
+	 * <h2>void clearstats()</h2>
+	 * 
+	 * <p>
+	 * Clear all stats tables
+	 * </p>
+	 */
+	clearstats,
+
+	/**
+	 * <h2>void zeropoints()</h2>
+	 * <p>
+	 * Reset all teams' points to zero
+	 * </p>
+	 */
+	zeropoints
 }

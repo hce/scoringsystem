@@ -1,0 +1,6 @@
+Welcome to the CTF scorebot 0.72
+----------------------------------------------------------------------
+type "man.reportflag", "man.reportadvisory", "man",
+  "copyright" or "license" for more information.
+
+NOTE: Max. one connection per IP; a new connection kills the old one.
