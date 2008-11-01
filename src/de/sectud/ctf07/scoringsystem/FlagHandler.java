@@ -63,10 +63,17 @@ public class FlagHandler implements Runnable {
 
 	private boolean distStop = false;
 
+	private QueueManager qm = new QueueManager(DJBSettings.loadInt(
+			"control/numworkers", 10));
+
 	public FlagHandler(ServiceHandler[] handlers) {
 		this.handlers = handlers;
+		setDistributeFlags(true);
+	}
+
+	public void setDistributeFlags(boolean distFlags) {
 		for (int i = 0; i < handlers.length; i++) {
-			handlers[i].setDistributeFlags(true);
+			handlers[i].setDistributeFlags(distFlags);
 		}
 	}
 
@@ -156,8 +163,12 @@ public class FlagHandler implements Runnable {
 				case 'h':
 					System.out.println("s  stop flag distribution");
 					System.out.println("q  terminate immediately");
-					System.out.println("c  continue flag distribution");
+					System.out
+							.println("c  continue flag distribution and collection");
+					System.out.println("f  continue flag collection only");
 					System.out.println("r  reload control/peers");
+					System.out.println("+  add 5 worker threads");
+					System.out.println("-  remove 1 worker thread");
 					System.out.println("h  show this help");
 					break;
 				case 's':
@@ -174,12 +185,40 @@ public class FlagHandler implements Runnable {
 					loadSlaves();
 					break;
 				case 'c':
+					flagHandler.setDistributeFlags(true);
 					flagHandler.contDist();
 					c.printf("Started flag distribution.\n");
+					break;
+				case 'f':
+					flagHandler.setDistributeFlags(false);
+					flagHandler.contDist();
+					c.printf("Began collecting pending flags.\n");
+					break;
+				case '+':
+					flagHandler.addWorkers(5);
+					c.printf("Added five workers, now %d left\n", flagHandler
+							.getWorkers());
+					break;
+				case '-':
+					flagHandler.delWorkers(1);
+					c.printf("Deleted one worker, now %d left\n", flagHandler
+							.getWorkers());
 					break;
 				}
 			}
 		}
+	}
+
+	private int getWorkers() {
+		return qm.getNumWorkers();
+	}
+
+	public void delWorkers(int i) {
+		qm.remWorkers(i);
+	}
+
+	public void addWorkers(int i) {
+		qm.addWorkers(i);
 	}
 
 	public synchronized void stopDist() {
@@ -194,10 +233,8 @@ public class FlagHandler implements Runnable {
 	public void run() {
 		long round = 0;
 		long nextRound;
-		int numWorkers = DJBSettings.loadInt("control/numworkers", 10);
-		QueueManager qm = new QueueManager(numWorkers);
-		System.out.printf("Using %d worker threads (control/numworkers)\n",
-				numWorkers);
+		System.out.printf("Using %d worker threads (control/numworkers)\n", qm
+				.getNumWorkers());
 		while (true) {
 			long ROUNDDELAY = (long) DJBSettings.loadInt("control/rounddelay",
 					600) * 1000;
@@ -219,7 +256,9 @@ public class FlagHandler implements Runnable {
 			round++;
 			synchronized (this) {
 				if (this.distStop) {
-					System.out.println("Flag distribution stopped. Waiting...");
+					System.out
+							.println("Flag distribution stopped. Use the 'f' command to collect "
+									+ "all pending flags. Use 'c' to continue normal operation.");
 					while (this.distStop) {
 						try {
 							wait();

@@ -137,4 +137,35 @@ public class QueueManager extends Thread {
 		}
 		return c;
 	}
+
+	public synchronized void addWorkers(int newWorkers) {
+		if (newWorkers < 1) {
+			throw new IllegalArgumentException("erm, whut!");
+		}
+		QueueWorker[] nw = new QueueWorker[this.workers.length + newWorkers];
+		for (int i = 0; i < this.workers.length; i++) {
+			nw[i] = this.workers[i];
+		}
+		newWorkers += this.workers.length;
+		for (int i = this.workers.length; i < newWorkers; i++) {
+			nw[i] = new QueueWorker();
+		}
+		this.workers = nw;
+	}
+
+	public synchronized void remWorkers(int numWorkersToRemove) {
+		int workersLeft = this.workers.length - numWorkersToRemove;
+		if (workersLeft < 1) {
+			throw new IllegalArgumentException("too few workers left");
+		}
+		QueueWorker[] nw = new QueueWorker[workersLeft];
+		for (int i = 0; i < workersLeft; i++) {
+			nw[i] = this.workers[i];
+		}
+		this.workers = nw;
+	}
+
+	public int getNumWorkers() {
+		return this.workers.length;
+	}
 }
