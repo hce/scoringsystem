@@ -465,5 +465,13 @@ public enum ClientFunctions {
 	 * Reset all teams' points to zero
 	 * </p>
 	 */
-	zeropoints
+	zeropoints,
+
+	/**
+	 * <h2>void deleteflags()</h2>
+	 * <p>
+	 * Delete all flags
+	 * </p>
+	 */
+	deleteflags
 }

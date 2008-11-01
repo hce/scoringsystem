@@ -409,6 +409,18 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 				}
 				return true;
 
+			case deleteflags:
+				if (!isAdmin) {
+					writer.println(permissionError);
+					return false;
+				}
+				if (deleteFlags()) {
+					writer.println("All flags deleted");
+				} else {
+					writer.println("Error; check the console");
+				}
+				return true;
+
 			case admin:
 				if (vParams.length > 1) {
 					throw new WrongParameterCountException(funcName, 1,
@@ -699,6 +711,24 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 			writer.println("Error: " + e.getMessage());
 		}
 		return null;
+	}
+
+	private boolean deleteFlags() {
+		Connection c = DBConnection.getInstance().getDB();
+		try {
+			Statement s = c.createStatement();
+			try {
+				s.execute("delete from flags");
+				return true;
+			} finally {
+				s.close();
+			}
+		} catch (Throwable t) {
+			t.printStackTrace();
+			return false;
+		} finally {
+			DBConnection.getInstance().returnConnection(c);
+		}
 	}
 
 	private boolean zeroPoints() {
