@@ -116,6 +116,16 @@ public class ServiceHandler implements Runnable, QueueJob {
 	 */
 	private boolean firstrun = true;
 
+	/**
+	 * Number of milliseconds a (team,service) pair is given each round at max
+	 */
+	private static final long MAX_TIME_PER_ROUND = 70000;
+
+	/**
+	 * Time after which flag distribution/collection is stopped for one round
+	 */
+	private long run_timeout;
+
 	static {
 		try {
 			MINIMAL_FLAG_AGE = Integer.valueOf(SQLConnection.getInstance()
@@ -172,6 +182,9 @@ public class ServiceHandler implements Runnable, QueueJob {
 			int iters = 5;
 			for (int i = 0; i < iters; i++) {
 				if (!this.noQuit) {
+					return;
+				}
+				if (System.currentTimeMillis() > this.run_timeout) {
 					return;
 				}
 				try {
@@ -299,6 +312,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 		 * catch _ANY_ error, and resume work
 		 */
 		try {
+			updateRunTimeout();
 			retrieveFlags();
 			storeFlags();
 		} catch (Throwable t) {
@@ -306,6 +320,10 @@ public class ServiceHandler implements Runnable, QueueJob {
 					+ Thread.currentThread().getName() + "-----");
 			System.err.println("Resuming operation in 60 seconds");
 		}
+	}
+
+	private void updateRunTimeout() {
+		this.run_timeout = System.currentTimeMillis() + MAX_TIME_PER_ROUND;
 	}
 
 	@Override
@@ -333,6 +351,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 			 * catch _ANY_ error, and resume work
 			 */
 			try {
+				updateRunTimeout();
 				retrieveFlags();
 				storeFlags();
 
@@ -360,9 +379,9 @@ public class ServiceHandler implements Runnable, QueueJob {
 		int minimalFlagAge = MINIMAL_FLAG_AGE;
 		/*
 		 * this loop is escaped as soon as there are no delivered flags left to
-		 * collect
+		 * collect or if the timeout is reached
 		 */
-		while (true) {
+		while (System.currentTimeMillis() < this.run_timeout) {
 			if (!this.noQuit) {
 				return;
 			}
