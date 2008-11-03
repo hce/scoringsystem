@@ -19,8 +19,23 @@ able to set up services and teams."""),
     ('q', 'adminpwd', 'Scorebot console administrator password', ''),
     ('e', """The scorebot distributes and later collects flags. Please
 decide how long a flag should be valid. (Period between distribution
-and collection) 300 is a reasonable default."""),
+and collection) 300 is a reasonable default. Note that flags may
+be valid longer; this value merely indicates after how many
+seconds a flag may be collected by the scorebot. If a round lasts longer,
+or if the gameserver job queue grows long, flags may be valid considerably
+longer."""),
     ('q', 'flagage', 'Flag validity period (seconds)', '300'),
+    ('e', """Testscripts are controlled by worker threads. The more worker
+threads exist, the more testscripts can be executed in parallel. Worker
+threads control both local and remotely running testscripts, so you have
+to consider the number of remote peers when deciding this value. (You can
+change it at runtime)"""),
+    ('q', 'workers', 'Number of worker threads', '10'),
+    ('e', """This gameserver uses rounds -- during each round, old flags are
+collected and new ones distributed. You must decide how long each round lasts.
+This value should be considerably higher than the average time it takes to
+do the flag collection+distribution. 600 seconds is a reasonable default."""),
+    ('q', 'rounddelay', "Round duration in seconds", '600'),
     ('e', """Configuring webserver stuff. You must specify a directory
 which will be served via HTTP to the public. If you're using debian,
 this might be something like /var/www/score
@@ -40,6 +55,11 @@ psql directly. You will be asked for the database password, although you
 already specified it here."""),
     ('r', "psql %(dbname)s -U %(dbuser)s -h %(dbhost)s < sql/ctf.sql")
 ]
+
+def die(s):
+    sys.stderr.write("\n\n======================================================================\n%s\n" % s)
+    sys.exit(1)
+
 
 class EmptyException(Exception): pass
 
@@ -61,7 +81,9 @@ def ask_questions():
             cmd = item[1] % results
             print "\n  %s\nPress ENTER to execute the command." % cmd
             sys.stdin.readline()
-            os.system(cmd)
+            res = os.system(cmd)
+            if os.WEXITSTATUS(res):
+                die("Importing the database failed. You must re-run the testscript.")
     return results
 
 def install():
@@ -91,6 +113,12 @@ adminPassword=%(adminpwd)s
     f.close()
     f = open('control/wwwroot', 'w')
     f.write("%s\n" % results['wwwroot'])
+    f.close()
+    f = open('control/numworkers', 'w')
+    f.write("%d" % results['workers'])
+    f.close()
+    f = open('control/rounddelay', 'w')
+    f.write("%d" % results['rounddelay'])
     f.close()
     if 'tspeers' in results:
         f = open('control/peers', 'w')
