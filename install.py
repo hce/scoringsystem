@@ -4,54 +4,62 @@ import sys
 
 
 questions = [
-    ('e', """You must create a postgresql database in advance to
-running this script. Also, you'll need a postgresql user
-for the scoring bot. If you haven't created both, please
-terminate this script, create them, and restart this
-script."""),
+    ('e', 
+"""You must create a postgresql database in advance to running this
+script. Also, you'll need a postgresql user for the scoring bot. If
+you haven't created both, please terminate this script, create them,
+and restart this script."""),
     ('q', 'dbuser', "Name of the postgresql DB user", 'ctf'),
     ('q', 'dbname', "Name of the postgresql DB", 'ctf'),
     ('q', 'dbpass', "Database password", ''),
     ('q', 'dbhost', "Host of the postgresql DB server", 'localhost'),
-    ('e', """You'll need an administrator password for the scorebot
-administration console. Without that password, you won't be
-able to set up services and teams."""),
+    ('e',
+"""You'll need an administrator password for the scorebot
+administration console. Without that password, you won't be able to
+set up services and teams."""),
     ('q', 'adminpwd', 'Scorebot console administrator password', ''),
-    ('e', """The scorebot distributes and later collects flags. Please
-decide how long a flag should be valid. (Period between distribution
-and collection) 300 is a reasonable default. Note that flags may
-be valid longer; this value merely indicates after how many
-seconds a flag may be collected by the scorebot. If a round lasts longer,
-or if the gameserver job queue grows long, flags may be valid considerably
+    ('e',
+"""The scorebot distributes and later collects flags. Please decide
+how long a flag should be valid. (Period between distribution and
+collection) 300 is a reasonable default. Note that flags may be valid
+longer; this value merely indicates after how many seconds a flag may
+be collected by the scorebot. If a round lasts longer, or if the
+gameserver job queue grows long, flags may be valid considerably
 longer."""),
     ('q', 'flagage', 'Flag validity period (seconds)', '300'),
-    ('e', """Testscripts are controlled by worker threads. The more worker
-threads exist, the more testscripts can be executed in parallel. Worker
-threads control both local and remotely running testscripts, so you have
-to consider the number of remote peers when deciding this value. (You can
-change it at runtime)"""),
+    ('e',
+"""Testscripts are controlled by worker threads. The more worker
+threads exist, the more testscripts can be executed in parallel.
+Worker threads control both local and remotely running testscripts, so
+you have to consider the number of remote peers when deciding this
+value. (You can change it at runtime)"""),
     ('q', 'workers', 'Number of worker threads', '10'),
-    ('e', """This gameserver uses rounds -- during each round, old flags are
-collected and new ones distributed. You must decide how long each round lasts.
-This value should be considerably higher than the average time it takes to
-do the flag collection+distribution. 600 seconds is a reasonable default."""),
+    ('e',
+"""This gameserver uses rounds -- during each round, old flags are
+collected and new ones distributed. You must decide how long each
+round lasts.  This value should be considerably higher than the
+average time it takes to do the flag collection+distribution. 600
+seconds is a reasonable default."""),
     ('q', 'rounddelay', "Round duration in seconds", '600'),
-    ('e', """Configuring webserver stuff. You must specify a directory
-which will be served via HTTP to the public. If you're using debian,
-this might be something like /var/www/score
-In addition to that, you'll need to know the exact URL your users
-will be accessing the scorebot through."""),
+    ('e',
+"""Configuring webserver stuff. You must specify a directory which
+will be served via HTTP to the public. If you're using debian, this
+might be something like /var/www/score In addition to that, you'll
+need to know the exact URL your users will be accessing the scorebot
+through."""),
     ('q', 'wwwpath', "Path to www directory", "/var/www/score"),
     ('q', 'wwwroot', "URL to access scoredata from", "http://130.83.160.197/score"),
-    ('e', """The scorebot allows you to distribute testscript
-execution to various peers. For each peer, a maximum number of
-connections and some other parameters can be configured. If a peer is
-not working, the next one is tried. If no peer can be reached, the job
-is executed locally. If you want to use that feature, enter the IPs /
-hostnames of the peers now, separated by spaces."""),
+    ('e',
+"""The scorebot allows you to distribute testscript execution to
+various peers. For each peer, a maximum number of connections and some
+other parameters can be configured. If a peer is not working, the next
+one is tried. If no peer can be reached, the job is executed locally.
+If you want to use that feature, enter the IPs / hostnames of the
+peers now, separated by spaces."""),
     ('q', 'tspeers', "Peer IPs", ''),
-    ('e', """I will now try to import the database. I do this by invoking
-psql directly. You will be asked for the database password, although you
+    ('e',
+"""I will now try to import the database. I do this by invoking psql
+directly. You will be asked for the database password, although you
 already specified it here."""),
     ('r', "psql %(dbname)s -U %(dbuser)s -h %(dbhost)s < sql/ctf.sql")
 ]
