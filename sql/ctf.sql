@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-SET client_encoding = 'SQL_ASCII';
+SET client_encoding = 'UTF8';
 SET standard_conforming_strings = off;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
@@ -75,7 +75,8 @@ CREATE TABLE services (
     service_name character varying(255),
     service_script character varying(255),
     service_script_type character varying(10) DEFAULT 'adela'::character varying,
-    service_check_interval integer
+    service_check_interval integer DEFAULT 300,
+    service_flags_per_check integer DEFAULT 5
 );
 
 
@@ -97,6 +98,50 @@ CREATE TABLE states (
 
 
 ALTER TABLE public.states OWNER TO ctf;
+
+--
+-- Name: stats_points; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE stats_points (
+    uid bigint NOT NULL,
+    stats_time bigint,
+    stats_team character varying(255),
+    stats_points_offensive integer,
+    stats_points_defensive integer,
+    stats_points_advisory integer,
+    stats_points_rulecompliance integer
+);
+
+
+ALTER TABLE public.stats_points OWNER TO ctf;
+
+--
+-- Name: stats_services; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE stats_services (
+    uid bigint NOT NULL,
+    stats_status character varying(255),
+    stats_statusmsg character varying(255),
+    stats_time bigint,
+    stats_team character varying(255),
+    stats_service character varying(255)
+);
+
+
+ALTER TABLE public.stats_services OWNER TO ctf;
+
+--
+-- Name: stats_times; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE stats_times (
+    stats_time bigint NOT NULL
+);
+
+
+ALTER TABLE public.stats_times OWNER TO ctf;
 
 --
 -- Name: teams; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
@@ -168,7 +213,7 @@ ALTER SEQUENCE flags_uid_seq OWNED BY flags.uid;
 -- Name: flags_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
-SELECT pg_catalog.setval('flags_uid_seq', 1, true);
+SELECT pg_catalog.setval('flags_uid_seq', 96, true);
 
 
 --
@@ -203,6 +248,7 @@ SELECT pg_catalog.setval('flagstats_uid_seq', 1, true);
 --
 
 CREATE SEQUENCE services_uid_seq
+    START WITH 1
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
@@ -222,7 +268,7 @@ ALTER SEQUENCE services_uid_seq OWNED BY services.uid;
 -- Name: services_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
-SELECT pg_catalog.setval('services_uid_seq', 1, true);
+SELECT pg_catalog.setval('services_uid_seq', 1, false);
 
 
 --
@@ -249,7 +295,61 @@ ALTER SEQUENCE states_uid_seq OWNED BY states.uid;
 -- Name: states_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
-SELECT pg_catalog.setval('states_uid_seq', 1, true);
+SELECT pg_catalog.setval('states_uid_seq', 1097, true);
+
+
+--
+-- Name: stats_points_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
+--
+
+CREATE SEQUENCE stats_points_uid_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.stats_points_uid_seq OWNER TO ctf;
+
+--
+-- Name: stats_points_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
+--
+
+ALTER SEQUENCE stats_points_uid_seq OWNED BY stats_points.uid;
+
+
+--
+-- Name: stats_points_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
+--
+
+SELECT pg_catalog.setval('stats_points_uid_seq', 330, true);
+
+
+--
+-- Name: stats_services_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
+--
+
+CREATE SEQUENCE stats_services_uid_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.stats_services_uid_seq OWNER TO ctf;
+
+--
+-- Name: stats_services_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
+--
+
+ALTER SEQUENCE stats_services_uid_seq OWNED BY stats_services.uid;
+
+
+--
+-- Name: stats_services_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
+--
+
+SELECT pg_catalog.setval('stats_services_uid_seq', 856, true);
 
 
 --
@@ -319,6 +419,20 @@ ALTER TABLE states ALTER COLUMN uid SET DEFAULT nextval('states_uid_seq'::regcla
 -- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
 --
 
+ALTER TABLE stats_points ALTER COLUMN uid SET DEFAULT nextval('stats_points_uid_seq'::regclass);
+
+
+--
+-- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
+--
+
+ALTER TABLE stats_services ALTER COLUMN uid SET DEFAULT nextval('stats_services_uid_seq'::regclass);
+
+
+--
+-- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
+--
+
 ALTER TABLE teams ALTER COLUMN uid SET DEFAULT nextval('teams_uid_seq'::regclass);
 
 
@@ -350,7 +464,7 @@ COPY flagstats (uid, flag_name, flag_fromteam, flag_collectingteam, flag_service
 -- Data for Name: services; Type: TABLE DATA; Schema: public; Owner: ctf
 --
 
-COPY services (uid, service_name, service_script, service_script_type, service_check_interval) FROM stdin;
+COPY services (uid, service_name, service_script, service_script_type, service_check_interval, service_flags_per_check) FROM stdin;
 \.
 
 
@@ -359,6 +473,30 @@ COPY services (uid, service_name, service_script, service_script_type, service_c
 --
 
 COPY states (uid, status_team, status_service, status_text, status_updated, status_verboseerror, status_color) FROM stdin;
+\.
+
+
+--
+-- Data for Name: stats_points; Type: TABLE DATA; Schema: public; Owner: ctf
+--
+
+COPY stats_points (uid, stats_time, stats_team, stats_points_offensive, stats_points_defensive, stats_points_advisory, stats_points_rulecompliance) FROM stdin;
+\.
+
+
+--
+-- Data for Name: stats_services; Type: TABLE DATA; Schema: public; Owner: ctf
+--
+
+COPY stats_services (uid, stats_status, stats_statusmsg, stats_time, stats_team, stats_service) FROM stdin;
+\.
+
+
+--
+-- Data for Name: stats_times; Type: TABLE DATA; Schema: public; Owner: ctf
+--
+
+COPY stats_times (stats_time) FROM stdin;
 \.
 
 
@@ -443,6 +581,30 @@ ALTER TABLE ONLY states
 
 
 --
+-- Name: stats_points_pkey; Type: CONSTRAINT; Schema: public; Owner: ctf; Tablespace: 
+--
+
+ALTER TABLE ONLY stats_points
+    ADD CONSTRAINT stats_points_pkey PRIMARY KEY (uid);
+
+
+--
+-- Name: stats_services_pkey; Type: CONSTRAINT; Schema: public; Owner: ctf; Tablespace: 
+--
+
+ALTER TABLE ONLY stats_services
+    ADD CONSTRAINT stats_services_pkey PRIMARY KEY (uid);
+
+
+--
+-- Name: stats_times_pkey; Type: CONSTRAINT; Schema: public; Owner: ctf; Tablespace: 
+--
+
+ALTER TABLE ONLY stats_times
+    ADD CONSTRAINT stats_times_pkey PRIMARY KEY (stats_time);
+
+
+--
 -- Name: teams_pkey; Type: CONSTRAINT; Schema: public; Owner: ctf; Tablespace: 
 --
 
@@ -456,6 +618,34 @@ ALTER TABLE ONLY teams
 
 ALTER TABLE ONLY teams
     ADD CONSTRAINT teams_team_name_key UNIQUE (team_name);
+
+
+--
+-- Name: fki_; Type: INDEX; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE INDEX fki_ ON stats_services USING btree (stats_time);
+
+
+--
+-- Name: fki_servicename; Type: INDEX; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE INDEX fki_servicename ON stats_services USING btree (stats_service);
+
+
+--
+-- Name: fki_statsteamname; Type: INDEX; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE INDEX fki_statsteamname ON stats_points USING btree (stats_team);
+
+
+--
+-- Name: fki_teamname; Type: INDEX; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE INDEX fki_teamname ON stats_services USING btree (stats_team);
 
 
 --
@@ -501,6 +691,13 @@ CREATE INDEX idx_flag_team ON flags USING btree (flag_team);
 
 
 --
+-- Name: idx_stats_time; Type: INDEX; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE INDEX idx_stats_time ON stats_points USING btree (stats_time);
+
+
+--
 -- Name: idx_time; Type: INDEX; Schema: public; Owner: ctf; Tablespace: 
 --
 
@@ -536,12 +733,52 @@ CREATE INDEX idx_tpt ON teams USING btree (team_points_total);
 
 
 --
--- Name: public; Type: ACL; Schema: -; Owner: pgsql
+-- Name: servicename; Type: FK CONSTRAINT; Schema: public; Owner: ctf
+--
+
+ALTER TABLE ONLY stats_services
+    ADD CONSTRAINT servicename FOREIGN KEY (stats_service) REFERENCES services(service_name);
+
+
+--
+-- Name: stats_services_stats_team_fkey; Type: FK CONSTRAINT; Schema: public; Owner: ctf
+--
+
+ALTER TABLE ONLY stats_services
+    ADD CONSTRAINT stats_services_stats_team_fkey FOREIGN KEY (stats_team) REFERENCES teams(team_name);
+
+
+--
+-- Name: stats_services_stats_time_fkey; Type: FK CONSTRAINT; Schema: public; Owner: ctf
+--
+
+ALTER TABLE ONLY stats_services
+    ADD CONSTRAINT stats_services_stats_time_fkey FOREIGN KEY (stats_time) REFERENCES stats_times(stats_time);
+
+
+--
+-- Name: statsteamname; Type: FK CONSTRAINT; Schema: public; Owner: ctf
+--
+
+ALTER TABLE ONLY stats_points
+    ADD CONSTRAINT statsteamname FOREIGN KEY (stats_team) REFERENCES teams(team_name);
+
+
+--
+-- Name: statstimes; Type: FK CONSTRAINT; Schema: public; Owner: ctf
+--
+
+ALTER TABLE ONLY stats_points
+    ADD CONSTRAINT statstimes FOREIGN KEY (stats_time) REFERENCES stats_times(stats_time);
+
+
+--
+-- Name: public; Type: ACL; Schema: -; Owner: postgres
 --
 
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
-REVOKE ALL ON SCHEMA public FROM pgsql;
-GRANT ALL ON SCHEMA public TO pgsql;
+REVOKE ALL ON SCHEMA public FROM postgres;
+GRANT ALL ON SCHEMA public TO postgres;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
 

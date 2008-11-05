@@ -13,11 +13,12 @@ and restart this script."""),
     ('q', 'dbname', "Name of the postgresql DB", 'ctf'),
     ('q', 'dbpass', "Database password", ''),
     ('q', 'dbhost', "Host of the postgresql DB server", 'localhost'),
-    ('e',
-"""You'll need an administrator password for the scorebot
-administration console. Without that password, you won't be able to
-set up services and teams."""),
+    ('e', """The scorebot telnet interface allows teams to report
+flags and advisories; gamemasters use it to set up teams and services,
+and to rate advisories."""),
     ('q', 'adminpwd', 'Scorebot console administrator password', ''),
+    ('q', 'sbc', "Parallel connections to the scorebot", "40"),
+    ('q', 'prompt', "Scorebot prompt", "scorebot"),
     ('e',
 """The scorebot distributes and later collects flags. Please decide
 how long a flag should be valid. (Period between distribution and
@@ -116,6 +117,9 @@ flagMinimalAge=%(flagage)s
 adminPassword=%(adminpwd)s
 """ % results)
     f.close()
+    f = open('control/flagminimalage', 'w')
+    f.write("%s\n" % results['flagage'])
+    f.close()
     f = open('control/wwwpath', 'w')
     f.write("%s\n" % results['wwwpath'])
     f.close()
@@ -127,6 +131,9 @@ adminPassword=%(adminpwd)s
     f.close()
     f = open('control/rounddelay', 'w')
     f.write("%d" % results['rounddelay'])
+    f.close()
+    f = open('control/scorebotconnections', 'w')
+    f.write("%d" % results['sbc'])
     f.close()
     if 'tspeers' in results:
         f = open('control/peers', 'w')
