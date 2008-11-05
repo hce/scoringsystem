@@ -62,7 +62,18 @@ peers now, separated by spaces."""),
 """I will now try to import the database. I do this by invoking psql
 directly. You will be asked for the database password, although you
 already specified it here."""),
-    ('r', "psql %(dbname)s -U %(dbuser)s -h %(dbhost)s < sql/ctf.sql")
+    ('r', "psql %(dbname)s -U %(dbuser)s -h %(dbhost)s < sql/ctf.sql"),
+    ('e', """Hmm, looks good :-)
+Most configuration can be done by changing the files in control/
+
+You can now:
+  ./gameserver.sh        launch the flag distributor
+  ./scoringbot.sh        launch the telnet interface
+  ./pagegen.sh           launch the website generator
+Visit http://ctf.hcesperer.org/gameserver/ for updates
+Feedback? hc@hcesperer.org
+
+Happy CTF'ing!
 ]
 
 def die(s):
