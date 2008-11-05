@@ -41,6 +41,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.SQLException;
 
+import org.hcesperer.utils.djb.DJBSettings;
+
 /**
  * Scorebot ADeLa interactive interface network server. This class listenes on a
  * socket for incoming network connections, creating a thread and an instance of
@@ -56,7 +58,8 @@ public class FlagServer extends Thread {
 
 	private ConnectionKiller killer = new ConnectionKiller();
 
-	private static final int MAX_CONNECTIONS = 40;
+	private static final int MAX_CONNECTIONS = DJBSettings.loadInt(
+			"control/scorebotconnections", 40);
 
 	public FlagServer() throws IOException, ClassNotFoundException,
 			SQLException {
