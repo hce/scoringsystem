@@ -73,7 +73,7 @@ You can now:
 Visit http://ctf.hcesperer.org/gameserver/ for updates
 Feedback? hc@hcesperer.org
 
-Happy CTF'ing!
+Happy CTF'ing!""")
 ]
 
 def die(s):
