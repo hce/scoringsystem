@@ -145,12 +145,30 @@ public class ServiceManager {
 		return null;
 	}
 
-	public boolean setinterval(int interval) {
-		return setValue("service_check_interval", interval);
+	public boolean setfpr(int interval) {
+		if (interval < 1) {
+			writer.println("Minimum value: 1");
+			return false;
+		}
+		if (interval < 2) {
+			writer.println("WARNING: you should set this at least to 2, \n"
+					+ "unless you know what you are doing! Setting this\n"
+					+ " to 1 makes the flag checking less reliable because\n"
+					+ " players can neglect the key,value stuff to a certain\n"
+					+ " degree and instead just reply with the last flag\n"
+					+ " delivered.");
+		}
+		if (interval > 42) {
+			writer
+					.println("That's insanely big! If you really want this value, set it yourself \n"
+							+ "in the DB or change da source!");
+			return false;
+		}
+		return setValue("service_flags_per_check", interval);
 	}
 
-	public int getinterval() {
-		return getValue("service_check_interval");
+	public int getfpr() {
+		return getValue("service_flags_per_check");
 	}
 
 	public boolean delete() throws SQLException {

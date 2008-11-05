@@ -48,6 +48,7 @@ import java.util.Random;
 
 import org.hcesperer.utils.DBConnection;
 import org.hcesperer.utils.SQLConnection;
+import org.hcesperer.utils.djb.DJBSettings;
 
 import de.sectud.ctf07.scoringsystem.Executor.Action;
 import de.sectud.ctf07.scoringsystem.ReturnCode.ErrorValues;
@@ -80,7 +81,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 
 	private String script;
 
-	private int interval;
+	private int flagsPerRound;
 
 	private boolean noQuit = true;
 
@@ -122,6 +123,12 @@ public class ServiceHandler implements Runnable, QueueJob {
 	private static final long MAX_TIME_PER_ROUND = 70000;
 
 	/**
+	 * Seconds a flag is valid
+	 */
+	private static final int FLAGVALIDITY = DJBSettings.loadInt(
+			"control/flagminimalage", 300);
+
+	/**
 	 * Time after which flag distribution/collection is stopped for one round
 	 */
 	private long run_timeout;
@@ -139,11 +146,11 @@ public class ServiceHandler implements Runnable, QueueJob {
 	}
 
 	public ServiceHandler(int sid, String name, String team, String script,
-			ScriptType type, int interval, int startDelay) {
+			ScriptType type, int flagsPerRound, int startDelay) {
 		this.sid = sid;
 		this.name = name;
 		this.script = script;
-		this.interval = interval;
+		this.flagsPerRound = flagsPerRound;
 		this.team = team;
 		this.startupSleepTime = startDelay;
 
@@ -178,8 +185,8 @@ public class ServiceHandler implements Runnable, QueueJob {
 				DBConnection.getInstance().returnConnection(connection);
 			}
 
-			// distribute 5 flags per iteration
-			int iters = 5;
+			// distribute n flags per iteration
+			int iters = this.flagsPerRound;
 			for (int i = 0; i < iters; i++) {
 				if (!this.noQuit) {
 					return;
@@ -230,7 +237,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 							ps.setString(5, teamHost);
 							ps.setLong(6, (Calendar.getInstance()
 									.getTimeInMillis() / 1000)
-									+ random.nextInt((this.interval / 10) + 1));
+									+ random.nextInt((FLAGVALIDITY / 10) + 1));
 							ps.execute();
 							ps.close();
 						} finally {
@@ -355,7 +362,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 				retrieveFlags();
 				storeFlags();
 
-				Thread.sleep(this.interval * 1000);
+				Thread.sleep(FLAGVALIDITY);
 			} catch (InterruptedException e) {
 				System.err.println("Interrupted; terminating");
 				this.noQuit = false;

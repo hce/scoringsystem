@@ -112,7 +112,7 @@ public class FlagHandler implements Runnable {
 			ps.close();
 			ps = connection
 					.prepareStatement("select uid,service_name,service_script,"
-							+ "service_script_type,service_check_interval from services");
+							+ "service_script_type,service_flags_per_check from services");
 			rs = ps.executeQuery();
 			ArrayList<ServiceHandler> handlers = new ArrayList<ServiceHandler>(
 					20);
@@ -122,10 +122,10 @@ public class FlagHandler implements Runnable {
 				String name = rs.getString(2);
 				String script = rs.getString(3);
 				ScriptType type = ScriptType.valueOf(rs.getString(4));
-				int interval = rs.getInt(5);
+				int flagsPerRound = rs.getInt(5);
 				for (String team : teams) {
 					handlers.add(new ServiceHandler(sID, name, team, script,
-							type, interval, startupDelay));
+							type, flagsPerRound, startupDelay));
 					startupDelay += 1250;
 				}
 			}
