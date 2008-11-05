@@ -1,8 +1,7 @@
-#(C) 2007-2008, Hans-Christian Esperer.
-#Wed Nov 05 14:38:14 CET 2008
-adminPassword=ctf
-flagMinimalAge=300
+# (C) 2008, HC Esperer. Scorebot file. Default setup by install.py
 user=ctf
 password=ctf
 connectionString=jdbc\:postgresql\://localhost/ctf
 singleInstanceConnection=false
+flagMinimalAge=300
+adminPassword=ctf
