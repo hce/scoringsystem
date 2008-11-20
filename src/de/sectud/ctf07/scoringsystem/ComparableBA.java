@@ -36,14 +36,32 @@
 
 package de.sectud.ctf07.scoringsystem;
 
+/**
+ * A comparable IP-address.
+ * 
+ * @author Hans-Christian Esperer
+ * @email hc@hcesperer.org
+ * 
+ */
 public final class ComparableBA implements Comparable<ComparableBA> {
 	private final byte[] ipAddress;
 
+	/**
+	 * Instanciate
+	 * 
+	 * @param addr
+	 *            IP-address
+	 */
 	public ComparableBA(byte[] addr) {
 		this.ipAddress = new byte[addr.length];
 		System.arraycopy(addr, 0, ipAddress, 0, addr.length);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
 	public int compareTo(ComparableBA o) {
 		/*
 		 * System.out.print("Compare "); for (int i = 0; i < 4; i++) {
@@ -51,7 +69,13 @@ public final class ComparableBA implements Comparable<ComparableBA> {
 		 * for (int i = 0; i < 4; i++) { System.out.print((int) ipAddress[i]); }
 		 * System.out.println();
 		 */
-		for (int i = 0; i < 4; i++) {
+		if (ipAddress.length < o.ipAddress.length) {
+			return -1;
+		}
+		if (ipAddress.length > o.ipAddress.length) {
+			return 1;
+		}
+		for (int i = 0; i < ipAddress.length; i++) {
 			if (ipAddress[i] < o.ipAddress[i]) {
 				return -1;
 			} else if (ipAddress[i] > o.ipAddress[i]) {

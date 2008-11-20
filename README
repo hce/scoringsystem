@@ -5,17 +5,24 @@ it under the terms of the new BSD license. See LICENSE for
 details.
 
 You need Java 1.6, and a running postgresql8.1 or later server on
-localhost.
+localhost, and python2.5 or later.
 
-To set the scoring bot up, invoke ./install.sh .
+To set the scoring bot up, invoke 'python2.5 install.py'
 
-Edit settings; change the admin password. The admin password is
-required when you telnet to localhost, port 8080. (See SETUP for
-details)
 
-Then, start ./scoringbot.sh . Connect to localhost with telnet to
-port 8080.  Place your testscripts in scripts/ . Make them
-executable. A sample is provided.
+To set up a team:
+ - telnet localhost 8080
+ENTER: admin()
+ENTER: admin password
+ENTER: createteam("TEAM_NAME").sethost("TEAM_HOST")
 
-See SETUP for details on how to create teams and services.
+To set up a service:
+ - telnet localhost 8080
+ENTER: admin()
+ENTER: admin password
+ENTER: createservice("SERVICE_NAME").setscript("SCRIPT_FILENAME")
 
+SCRIPT_FILENAME is the filename of the testscript. All testscripts
+must lie in scripts/ . Note that you can specify something like
+"../foo" as SCRIPT_FILENAME to break out of the scripts/ directory.
+However, this is not recommended.
