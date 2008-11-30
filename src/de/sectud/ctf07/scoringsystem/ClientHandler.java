@@ -1434,6 +1434,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 			ps.setString(3, teamName);
 			ps.setString(4, flagService);
 			ps.execute();
+            ps.close();
 			return true;
 		} catch (SQLException e) {
 			e.printStackTrace();
