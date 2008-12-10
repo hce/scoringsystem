@@ -4,6 +4,7 @@ import threading
 import socket
 import time
 import subprocess
+import re
 
 CHILDTIMEOUT = 60
 
@@ -81,13 +82,22 @@ class SocketHandler(threading.Thread):
         except: return    # If we can't set a timeout, return
         self.cs.sendall("200 %d Welcome\n" % nr)
         self.lr = LineReader(self.cs, 8192)
-        cmdline = self.lr.readline().split(" ", 1)
-        if len(cmdline) < 2: self.die("300 Invalid parameter count")
+        env = os.environ
+        validenvkey = re.compile("^[A-Za-z][A-Za-z0-9]*$")
+        while True:
+            cmdline = self.lr.readline().split(" ", 1)
+            if len(cmdline) < 2: self.die("300 Invalid parameter count")
+            if cmdline[0] == 'ENV':
+                try: [key, value] = cmdline[1].split(" ", 1)
+                except: self.die("300 Invalid parameter count")
+                if validenvkey.match(key) == None: self.die("300 Invalid key")
+                env['CTFGAME_' + key] = value
+            else: break
         cmd = cmdline[0]
         if cmd not in self.allowedscripts: self.die("400 Invalid script specified")
         parms = cmdline[1].split(" ")
-        self.runscript(cmd, parms)
-    def runscript(self, cmd, parms):
+        self.runscript(cmd, parms, env)
+    def runscript(self, cmd, parms, env):
         lendtime = time.time() + CHILDTIMEOUT
         cmdlist = ['./' + cmd] + parms
         print "[FORK] %s" % " ".join(cmdlist)
@@ -168,4 +178,6 @@ if __name__ == '__main__':
     bindaddr = ('0.0.0.0', 1723)
     dx = DExec(maxprocs, ips, bindaddr)
     dx.run()
-        
+
+
+# vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
