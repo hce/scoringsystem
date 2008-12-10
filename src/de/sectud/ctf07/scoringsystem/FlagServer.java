@@ -36,6 +36,7 @@
 
 package de.sectud.ctf07.scoringsystem;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -60,6 +61,10 @@ public class FlagServer extends Thread {
 
 	private static final int MAX_CONNECTIONS = DJBSettings.loadInt(
 			"control/scorebotconnections", 40);
+
+	static {
+		new File("logs").mkdirs();
+	}
 
 	public FlagServer() throws IOException, ClassNotFoundException,
 			SQLException {

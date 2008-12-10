@@ -36,6 +36,7 @@
 
 package de.sectud.ctf07.scoringsystem;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,6 +53,7 @@ public class Stuff {
 	private static Object roundMutex = new Object();
 
 	static {
+		new File("curgame").mkdirs();
 		setCurrentRound(Long.valueOf(DJBSettings.loadString("curgame/roundnum",
 				"0")));
 	}
@@ -120,12 +122,18 @@ public class Stuff {
 	}
 
 	public static void setCurrentRound(long roundNum) {
-		synchronized (roundMutex) {
-			currentRound = roundNum;
-		}
+		currentRound = roundNum;
+		DJBSettings.writeLine("curgame/roundnum", String.valueOf(currentRound));
 	}
 
 	public static void resetRoundCounter() {
 		setCurrentRound(0);
+	}
+
+	public static long nextRound() {
+		synchronized (roundMutex) {
+			setCurrentRound(currentRound + 1);
+			return currentRound;
+		}
 	}
 }

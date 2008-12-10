@@ -37,6 +37,7 @@
 package de.sectud.ctf07.scoringsystem;
 
 import java.io.Console;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
@@ -69,6 +70,10 @@ public class FlagHandler implements Runnable {
 	private boolean halted = false;
 
 	private long nextRound;
+
+	static {
+		new File("eventlogs").mkdirs();
+	}
 
 	public FlagHandler(ServiceHandler[] handlers) {
 		this.handlers = handlers;
@@ -103,7 +108,7 @@ public class FlagHandler implements Runnable {
 			Connection connection = DBConnection.getInstance().getDB();
 			PreparedStatement ps;
 			ps = connection
-					.prepareStatement("select team_name from teams order by team_name");
+					.prepareStatement("select team_name from teams order by uid");
 			ResultSet rs = ps.executeQuery();
 			ArrayList<String> teams = new ArrayList<String>();
 			while (rs.next()) {
@@ -117,6 +122,7 @@ public class FlagHandler implements Runnable {
 			ArrayList<ServiceHandler> handlers = new ArrayList<ServiceHandler>(
 					20);
 			int startupDelay = 0;
+			int i = 0;
 			while (rs.next()) {
 				int sID = rs.getInt(1);
 				String name = rs.getString(2);
@@ -125,7 +131,7 @@ public class FlagHandler implements Runnable {
 				int flagsPerRound = rs.getInt(5);
 				for (String team : teams) {
 					handlers.add(new ServiceHandler(sID, name, team, script,
-							type, flagsPerRound, startupDelay, sID));
+							type, flagsPerRound, startupDelay, ++i));
 					startupDelay += 1250;
 				}
 			}
@@ -264,7 +270,7 @@ public class FlagHandler implements Runnable {
 	}
 
 	public void run() {
-		long round = 0;
+		long round = Stuff.getCurrentRound();
 		System.out.printf("Using %d worker threads (control/numworkers)\n", qm
 				.getNumWorkers());
 		while (true) {
@@ -289,7 +295,7 @@ public class FlagHandler implements Runnable {
 				}
 			}
 			System.out.printf("  ===== Round %d finished =====  \n", round);
-			round++;
+			round = Stuff.nextRound();
 			synchronized (this) {
 				if (this.distStop) {
 					this.halted = true;

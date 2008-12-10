@@ -3,6 +3,8 @@ package org.hcesperer.utils.djb;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -92,6 +94,21 @@ public class DJBSettings {
 			return sb.toString();
 		} catch (Throwable t) {
 			return null;
+		}
+	}
+
+	public static boolean writeLine(String fn, String line) {
+		if (line.contains("\n")) {
+			throw new IllegalArgumentException();
+		}
+		try {
+			FileWriter w = new FileWriter(fn);
+			w.write(line);
+			w.write("\n");
+			w.close();
+			return true;
+		} catch (IOException e) {
+			return false;
 		}
 	}
 
