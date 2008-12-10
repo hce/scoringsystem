@@ -82,7 +82,7 @@ class SocketHandler(threading.Thread):
         except: return    # If we can't set a timeout, return
         self.cs.sendall("200 %d Welcome\n" % nr)
         self.lr = LineReader(self.cs, 8192)
-        env = os.environ
+        env = dict(os.environ)
         validenvkey = re.compile("^[A-Za-z][A-Za-z0-9]*$")
         while True:
             cmdline = self.lr.readline().split(" ", 1)
@@ -101,7 +101,7 @@ class SocketHandler(threading.Thread):
         lendtime = time.time() + CHILDTIMEOUT
         cmdlist = ['./' + cmd] + parms
         print "[FORK] %s" % " ".join(cmdlist)
-        try: process = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, cwd=self.scriptpath)
+        try: process = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, cwd=self.scriptpath, env=env, close_fds=True)
         except Exception, e:
             print "[e] %s" % e
             self.die("500 %s" % e)
