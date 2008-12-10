@@ -42,10 +42,10 @@ public class LocalSubProcess implements SubProcess {
 		String[] envstring = new String[mergeset.size()];
 		int i = 0;
 		for (String key : mergeset) {
-			String value = sysenv.get(mergeset);
+			String value = sysenv.get(key);
 			if (value == null) {
+				value = env.get(key);
 				key = "CTFGAME_" + key;
-				value = env.get(mergeset);
 			}
 			envstring[i++] = String.format("%s=%s", key, value);
 		}

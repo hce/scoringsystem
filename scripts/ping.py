@@ -2,6 +2,7 @@
 
 from sys import exit, argv, stderr, stdout
 from os import popen
+import os
 import re
 import time
 
@@ -49,17 +50,6 @@ def test((ip)):
     stdout.write("Retrieving always succeeds")
     exit(0) # service is fully functional
     
-try:
-    {   'store': store,
-        'retrieve': retrieve,
-        'test': test
-    }[argv[1]](tuple(argv[2:]))
-except SystemExit, e:
-    exit(e.code)
-except Exception, e:
-    stdout.write("ERROR! ")
-    stdout.write(str(e))
-    stderr.write("Error: %s\n" % str(e))
-    stderr.write("Usage: %s store|retrieve IP FLAGID FLAG\n" % argv[0])
-    stderr.write("       %s test IP\n" % argv[0])
-stderr.flush()
+
+stdout.write(" ".join(["%s=%s" % (key, os.environ[key]) for key in os.environ if key.startswith('CTFGAME_')]))
+exit(0)

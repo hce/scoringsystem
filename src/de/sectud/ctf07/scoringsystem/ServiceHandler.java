@@ -239,7 +239,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 							 * store flag in database
 							 */
 							PreparedStatement ps = connection
-									.prepareStatement("insert into flags(flag_name,flag_collected,flag_team,flag_service,flag_teamhost,flag_disttime,flag_num,flag_roundnum) values(?,?,?,?,?,?,?)");
+									.prepareStatement("insert into flags(flag_name,flag_collected,flag_team,flag_service,flag_teamhost,flag_disttime,flag_num,flag_roundnum) values(?,?,?,?,?,?,?,?)");
 							ps.setString(1, flagID);
 							ps.setBoolean(2, false);
 							ps.setString(3, this.team);
@@ -335,6 +335,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 			retrieveFlags();
 			storeFlags();
 		} catch (Throwable t) {
+			t.printStackTrace();
 			System.err.println("-----SERIOUS ERROR HAPPENED AT THREAD "
 					+ Thread.currentThread().getName() + "-----");
 			System.err.println("Resuming operation in 60 seconds");
