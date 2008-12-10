@@ -48,7 +48,6 @@ import java.util.Map;
 import java.util.Random;
 
 import org.hcesperer.utils.DBConnection;
-import org.hcesperer.utils.SQLConnection;
 import org.hcesperer.utils.djb.DJBSettings;
 
 import de.sectud.ctf07.scoringsystem.Executor.Action;
@@ -73,7 +72,8 @@ public class ServiceHandler implements Runnable, QueueJob {
 	/**
 	 * Minimal age of a flag that may be collected in seconds
 	 */
-	private static int MINIMAL_FLAG_AGE = 900;
+	private static int MINIMAL_FLAG_AGE = DJBSettings.loadInt(
+			"control/flagminimalage", 900);
 
 	@SuppressWarnings("unused")
 	private int sid;
@@ -91,7 +91,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 	private final int teamNumber;
 
 	private final ReturnCode RETCODE_TIMEOUT = ReturnCode.makeReturnCode(
-			Success.FAILURE, ErrorValues.TIMEOUT);
+			Success.FAILURE, ErrorValues.TIMEOUT, true);
 
 	private final EventLogger log = Logger.getLogger();
 
@@ -137,12 +137,6 @@ public class ServiceHandler implements Runnable, QueueJob {
 	private long run_timeout;
 
 	static {
-		try {
-			MINIMAL_FLAG_AGE = Integer.valueOf(SQLConnection.getInstance()
-					.getProperty("flagMinimalAge", "900"));
-		} catch (NumberFormatException e) {
-			MINIMAL_FLAG_AGE = 900;
-		}
 		System.out.printf(
 				"ServiceHandler: flagMinimalAge set to %d seconds.\n",
 				MINIMAL_FLAG_AGE);
@@ -317,7 +311,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 				if (noStatusAvailable(this.team, this.name)) {
 					reportServiceStatus(this.team, this.name, ReturnCode
 							.makeReturnCode(Success.FAILURE,
-									ErrorValues.STATUSUNKNOWN),
+									ErrorValues.STATUSUNKNOWN, true),
 							"Please wait some minutes, until the gameserver can "
 									+ "determine the service status");
 				}
@@ -356,7 +350,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 			if (noStatusAvailable(this.team, this.name)) {
 				reportServiceStatus(this.team, this.name, ReturnCode
 						.makeReturnCode(Success.FAILURE,
-								ErrorValues.STATUSUNKNOWN),
+								ErrorValues.STATUSUNKNOWN, true),
 						"Please wait some minutes, until the gameserver can "
 								+ "determine the service status");
 			}
@@ -476,8 +470,9 @@ public class ServiceHandler implements Runnable, QueueJob {
 				e.printStackTrace();
 			}
 
-			printSREvent(hostID, flagDefended ? "<=" : "CF", this.team,
-					this.name, retCode, errorMessage);
+			printSREvent(hostID,
+					retCode.counts() ? (flagDefended ? "<=" : "CF") : "$$",
+					this.team, this.name, retCode, errorMessage);
 
 			// mark the flag as updated
 			connection = DBConnection.getInstance().getDB();
@@ -491,9 +486,11 @@ public class ServiceHandler implements Runnable, QueueJob {
 						.prepareStatement("update flags set flag_collectingteam=? where flag_name=?");
 				/*
 				 * Count only if flag was successfully retrieved *and* not
-				 * previously captured
+				 * previously captured *and* the testscript says it should
+				 * actually be counted
 				 */
-				if ((retCode.getSuccess() == Success.SUCCESS) && flagDefended) {
+				if ((retCode.getSuccess() == Success.SUCCESS) && flagDefended
+						&& retCode.counts()) {
 					PreparedStatement ps2 = connection
 							.prepareStatement("select team_points_defensive from teams where team_name=?");
 					ps2.setString(1, teamID);

@@ -47,7 +47,7 @@ public final class Executor {
 	private static final ServiceStatus SS_TIMEOUT = new ServiceStatus(
 			ReturnCode.makeReturnCode(
 					de.sectud.ctf07.scoringsystem.ReturnCode.Success.FAILURE,
-					ErrorValues.TIMEOUT), "Timeout", -1);
+					ErrorValues.TIMEOUT, true), "Timeout", -1);
 
 	/**
 	 * Add a peer to the peer list

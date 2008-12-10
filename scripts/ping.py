@@ -52,4 +52,5 @@ def test((ip)):
     
 
 stdout.write(" ".join(["%s=%s" % (key, os.environ[key]) for key in os.environ if key.startswith('CTFGAME_')]))
-exit(0)
+exit(0<<7)
+

@@ -25,7 +25,7 @@ public class LocalSubProcess implements SubProcess {
 	 * TIMEOUT returncode
 	 */
 	private final ReturnCode RETCODE_TIMEOUT = ReturnCode.makeReturnCode(
-			Success.FAILURE, ErrorValues.TIMEOUT);
+			Success.FAILURE, ErrorValues.TIMEOUT, true);
 
 	/*
 	 * (non-Javadoc)

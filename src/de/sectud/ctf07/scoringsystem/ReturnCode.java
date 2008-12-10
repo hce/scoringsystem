@@ -66,6 +66,8 @@ public final class ReturnCode {
 
 	private final ErrorValues reason;
 
+	private final boolean counts;
+
 	private final Colors color;
 
 	public String getColor() {
@@ -73,11 +75,12 @@ public final class ReturnCode {
 	}
 
 	private ReturnCode(final Success success, final ErrorType errorType,
-			final ErrorValues reason) {
+			final ErrorValues reason, final boolean counts) {
 		super();
 		this.success = success;
 		this.errorType = errorType;
 		this.reason = reason;
+		this.counts = counts;
 
 		if (this.success == Success.SUCCESS) {
 			this.color = Colors.SUCCESS;
@@ -109,10 +112,13 @@ public final class ReturnCode {
 	 *            Type of failure / success
 	 * @param reason
 	 *            Reason for failure to have the specified value
+	 * @param counts
+	 *            Increase defense counter?
 	 * @return instance of class ReturnCode representing the specified values
 	 */
-	public static ReturnCode makeReturnCode(Success failure, ErrorValues reason) {
-		return new ReturnCode(failure, ErrorType.VALUE, reason);
+	public static ReturnCode makeReturnCode(Success failure,
+			ErrorValues reason, boolean counts) {
+		return new ReturnCode(failure, ErrorType.VALUE, reason, counts);
 	}
 
 	/**
@@ -124,6 +130,8 @@ public final class ReturnCode {
 	 * @return according ReturnCode instance
 	 */
 	public static ReturnCode fromOrdinal(int value) {
+		boolean counts = ((value >> 7) & 1) == 0;
+		value = value & ((1 << 7) - 1);
 		int suc = value % 2;
 		int type = (value >> 1) % 2;
 		int retval = value >> 2;
@@ -139,7 +147,7 @@ public final class ReturnCode {
 						+ String.valueOf(retval));
 			}
 			ErrorValues v = values[retval];
-			return new ReturnCode(s, t, v);
+			return new ReturnCode(s, t, v, counts);
 		}
 		throw new IllegalArgumentException(
 				"WTF!? Someone fiddled seriously with the code...");
@@ -157,14 +165,20 @@ public final class ReturnCode {
 		return success;
 	}
 
+	public boolean counts() {
+		return counts;
+	}
+
 	@Override
 	public int hashCode() {
-		final int PRIME = 31;
+		final int prime = 31;
 		int result = 1;
-		result = PRIME * result
+		result = prime * result + ((color == null) ? 0 : color.hashCode());
+		result = prime * result + (counts ? 1231 : 1237);
+		result = prime * result
 				+ ((errorType == null) ? 0 : errorType.hashCode());
-		result = PRIME * result + ((reason == null) ? 0 : reason.hashCode());
-		result = PRIME * result + ((success == null) ? 0 : success.hashCode());
+		result = prime * result + ((reason == null) ? 0 : reason.hashCode());
+		result = prime * result + ((success == null) ? 0 : success.hashCode());
 		return result;
 	}
 
@@ -177,6 +191,13 @@ public final class ReturnCode {
 		if (getClass() != obj.getClass())
 			return false;
 		final ReturnCode other = (ReturnCode) obj;
+		if (color == null) {
+			if (other.color != null)
+				return false;
+		} else if (!color.equals(other.color))
+			return false;
+		if (counts != other.counts)
+			return false;
 		if (errorType == null) {
 			if (other.errorType != null)
 				return false;
@@ -197,13 +218,13 @@ public final class ReturnCode {
 
 	@Override
 	public String toString() {
-		return String.format("type: %s | reason: %s", success.toString(),
-				reason.getDescription());
+		return String.format("type: %s | reason: %s | %s ", success.toString(),
+				reason.getDescription(), counts ? "counts" : "does not count");
 	}
 
 	public static void main(String[] args) {
 		ReturnCode t = ReturnCode.makeReturnCode(Success.FAILURE,
-				ErrorValues.TIMEOUT);
+				ErrorValues.TIMEOUT, true);
 		System.out.println(t.toString());
 		System.out.println(t.ordinal());
 	}
