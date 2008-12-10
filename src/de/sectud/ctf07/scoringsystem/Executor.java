@@ -1,6 +1,8 @@
 package de.sectud.ctf07.scoringsystem;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import de.sectud.ctf07.scoringsystem.ReturnCode.ErrorValues;
@@ -108,14 +110,14 @@ public final class Executor {
 	 *         process
 	 */
 	public static ServiceStatus runSubprocess(String host, int hostNR,
-			String cmdLine) {
+			String cmdLine, Map<String, String> env) {
 		try {
 			// We must use a timeout _greater than the one specified_ here,
 			// because we must give the remote process the chance to report
 			// timeout, which it can't if we time out locally first.
 			RemoteSubProcess rsp = new RemoteSubProcess(host, TIMEOUT + 10000,
 					hostNR);
-			return rsp.runTestscript(cmdLine);
+			return rsp.runTestscript(cmdLine, env);
 		} catch (Throwable t) {
 			return null;
 		}
@@ -139,24 +141,24 @@ public final class Executor {
 	 * @return Result of the testscript
 	 */
 	public static ServiceStatus runTestscript(String script, Action action,
-			String host, String flagid, String flag) {
+			String host, String flagid, String flag, Map<String, String> env) {
 		String cmd = String.format("%s %s %s %s %s", script, action.toString(),
 				host, flagid, flag);
 		ServiceStatus ss;
 		if (hosts.length > 0) {
 			int randhostidx = r.nextInt(hosts.length);
-			ss = runSubprocess(hosts[randhostidx], randhostidx, cmd);
+			ss = runSubprocess(hosts[randhostidx], randhostidx, cmd, env);
 			if (ss != null) {
 				return ss;
 			}
 			for (int i = 0; i < hosts.length; i++) {
-				ss = runSubprocess(hosts[i], i, cmd);
+				ss = runSubprocess(hosts[i], i, cmd, env);
 				if (ss != null) {
 					return ss;
 				}
 			}
 		}
-		ss = runLocalProcess(cmd);
+		ss = runLocalProcess(cmd, env);
 		if (ss == null) {
 			return SS_TIMEOUT;
 		}
@@ -170,10 +172,11 @@ public final class Executor {
 	 *            command line to call (passed to a shell, beware!)
 	 * @return Result of the process
 	 */
-	public static ServiceStatus runLocalProcess(String cmd) {
+	public static ServiceStatus runLocalProcess(String cmd,
+			Map<String, String> env) {
 		LocalSubProcess lsp = new LocalSubProcess();
 		try {
-			return lsp.runTestscript(cmd);
+			return lsp.runTestscript(cmd, env);
 		} catch (ExecutionException e) {
 			e.printStackTrace();
 			return null;
@@ -217,10 +220,12 @@ public final class Executor {
 	 * @param args
 	 */
 	public static void main(String args[]) {
+		Map<String, String> env = new HashMap<String, String>();
+		env.put("hallowelt", "yee haw");
 		addHost("127.0.0.1");
 		addHost("salato.hcesperer.org");
 		ServiceStatus ss = runTestscript("ping.py", Action.STORE, "localhost",
-				"foo", "bar");
+				"foo", "bar", env);
 		if (ss == null) {
 			System.out.println(ss);
 			return;

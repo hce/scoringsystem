@@ -44,6 +44,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Calendar;
+import java.util.Map;
 import java.util.Random;
 
 import org.hcesperer.utils.DBConnection;
@@ -86,6 +87,8 @@ public class ServiceHandler implements Runnable, QueueJob {
 	private boolean noQuit = true;
 
 	private final String team;
+
+	private final int teamNumber;
 
 	private final ReturnCode RETCODE_TIMEOUT = ReturnCode.makeReturnCode(
 			Success.FAILURE, ErrorValues.TIMEOUT);
@@ -146,13 +149,14 @@ public class ServiceHandler implements Runnable, QueueJob {
 	}
 
 	public ServiceHandler(int sid, String name, String team, String script,
-			ScriptType type, int flagsPerRound, int startDelay) {
+			ScriptType type, int flagsPerRound, int startDelay, int teamNumber) {
 		this.sid = sid;
 		this.name = name;
 		this.script = script;
 		this.flagsPerRound = flagsPerRound;
 		this.team = team;
 		this.startupSleepTime = startDelay;
+		this.teamNumber = teamNumber;
 
 		log.logMessage(this, "Created service handler for service %s, team %s",
 				name, team);
@@ -200,8 +204,14 @@ public class ServiceHandler implements Runnable, QueueJob {
 					String flagIDID = flagIDFromFlag(flagID);
 					ReturnCode retCode = null;
 					String verboseMessage = "";
+					long flagRoundNum = Stuff.getCurrentRound();
+					Map<String, String> envParams = Stuff.dict("FLAGNUM",
+							String.valueOf(iters - i - 1), "TIMEOUT", "60",
+							"TEAMNUM", String.valueOf(this.teamNumber),
+							"ROUNDNUM", String.valueOf(flagRoundNum));
 					ServiceStatus ss = Executor.runTestscript(script,
-							Executor.Action.STORE, teamHost, flagIDID, flagID);
+							Executor.Action.STORE, teamHost, flagIDID, flagID,
+							envParams);
 					verboseMessage = ss.getStatusMessage();
 					retCode = ss.getReturnCode();
 					int hostID = ss.getExecutingHost();
@@ -229,7 +239,7 @@ public class ServiceHandler implements Runnable, QueueJob {
 							 * store flag in database
 							 */
 							PreparedStatement ps = connection
-									.prepareStatement("insert into flags(flag_name,flag_collected,flag_team,flag_service,flag_teamhost,flag_disttime) values(?,?,?,?,?,?)");
+									.prepareStatement("insert into flags(flag_name,flag_collected,flag_team,flag_service,flag_teamhost,flag_disttime,flag_num,flag_roundnum) values(?,?,?,?,?,?,?)");
 							ps.setString(1, flagID);
 							ps.setBoolean(2, false);
 							ps.setString(3, this.team);
@@ -238,6 +248,8 @@ public class ServiceHandler implements Runnable, QueueJob {
 							ps.setLong(6, (Calendar.getInstance()
 									.getTimeInMillis() / 1000)
 									+ random.nextInt((FLAGVALIDITY / 10) + 1));
+							ps.setInt(7, iters - i - 1);
+							ps.setLong(8, flagRoundNum);
 							ps.execute();
 							ps.close();
 						} finally {
@@ -401,13 +413,15 @@ public class ServiceHandler implements Runnable, QueueJob {
 			String teamID;
 			String teamHost;
 			boolean flagDefended;
+			int flagNum;
+			long roundNum;
 
 			/*
 			 * check if there is a flag
 			 */
 			try {
 				mainPS = connection
-						.prepareStatement("select flag_name,flag_team,flag_teamhost,flag_captured from flags "
+						.prepareStatement("select flag_name,flag_team,flag_teamhost,flag_captured,flag_num,flag_roundnum from flags "
 								+ "where flag_collected=false "
 								+ "and flag_service=? and flag_disttime<? "
 								+ "and flag_team=? order by flag_disttime");
@@ -425,6 +439,8 @@ public class ServiceHandler implements Runnable, QueueJob {
 				teamID = mainRS.getString(2);
 				teamHost = mainRS.getString(3);
 				flagDefended = !mainRS.getBoolean(4);
+				flagNum = mainRS.getInt(5);
+				roundNum = mainRS.getLong(6);
 			} catch (SQLException e1) {
 				return;
 			} finally {
@@ -441,9 +457,13 @@ public class ServiceHandler implements Runnable, QueueJob {
 			String errorMessage = "";
 			String flagIDID = flagIDFromFlag(flagID);
 			int hostID = -1;
+			Map<String, String> envParams = Stuff.dict("FLAGNUM", String
+					.valueOf(flagNum), "TIMEOUT", "60", "TEAMNUM", String
+					.valueOf(this.teamNumber), "ROUNDNUM", String
+					.valueOf(roundNum));
 			try {
 				ServiceStatus ss = Executor.runTestscript(script,
-						Action.RETRIEVE, teamHost, flagIDID, flagID);
+						Action.RETRIEVE, teamHost, flagIDID, flagID, envParams);
 				retCode = ss.getReturnCode();
 				errorMessage = ss.getStatusMessage();
 				hostID = ss.getExecutingHost();

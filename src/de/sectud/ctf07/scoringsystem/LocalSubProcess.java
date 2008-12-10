@@ -1,6 +1,9 @@
 package de.sectud.ctf07.scoringsystem;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import de.sectud.ctf07.scoringsystem.ReturnCode.ErrorValues;
 import de.sectud.ctf07.scoringsystem.ReturnCode.Success;
@@ -29,11 +32,25 @@ public class LocalSubProcess implements SubProcess {
 	 * 
 	 * @see de.sectud.ctf07.scoringsystem.SubProcess#runTestscript(java.lang.String)
 	 */
-	public ServiceStatus runTestscript(String scriptAndParams)
-			throws ExecutionException {
+	public ServiceStatus runTestscript(String scriptAndParams,
+			Map<String, String> env) throws ExecutionException {
 		Process p;
+		Map<String, String> sysenv = System.getenv();
+		Set<String> mergeset = new TreeSet<String>();
+		mergeset.addAll(sysenv.keySet());
+		mergeset.addAll(env.keySet());
+		String[] envstring = new String[mergeset.size()];
+		int i = 0;
+		for (String key : mergeset) {
+			String value = sysenv.get(mergeset);
+			if (value == null) {
+				key = "CTFGAME_" + key;
+				value = env.get(mergeset);
+			}
+			envstring[i++] = String.format("%s=%s", key, value);
+		}
 		try {
-			p = rt.exec("scripts/" + scriptAndParams);
+			p = rt.exec("scripts/" + scriptAndParams, envstring);
 		} catch (IOException e) {
 			throw new ExecutionException(e);
 		}

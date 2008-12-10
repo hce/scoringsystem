@@ -665,7 +665,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 				}
 				this.evaluator.setAllowArbitraryInstanciiation(true);
 				this.evaluator.setTrusted(true);
-				Class cls = Class.forName((String) vParams[0]);
+				Class<?> cls = Class.forName((String) vParams[0]);
 				if (cls != null) {
 					this.evaluator.SetVariable(cls.getSimpleName(), cls);
 					writer.println("Imported " + cls.getSimpleName());
@@ -1434,7 +1434,7 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 			ps.setString(3, teamName);
 			ps.setString(4, flagService);
 			ps.execute();
-            ps.close();
+			ps.close();
 			return true;
 		} catch (SQLException e) {
 			e.printStackTrace();

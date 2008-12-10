@@ -36,11 +36,25 @@
 
 package de.sectud.ctf07.scoringsystem;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.hcesperer.utils.djb.DJBSettings;
+
 public class Stuff {
 
 	public static final String TEXT_ATTRS_OFF = "\033[0m";
 
 	public static final String TEXT_ATTRS_BOLD = "\033[1m";
+
+	private static long currentRound;
+
+	private static Object roundMutex = new Object();
+
+	static {
+		setCurrentRound(Long.valueOf(DJBSettings.loadString("curgame/roundnum",
+				"0")));
+	}
 
 	/**
 	 * Returns an uppercase and with ':' separated hexadecimal String of the
@@ -90,4 +104,28 @@ public class Stuff {
 		return "\033[0m";
 	}
 
+	public static Map<String, String> dict(String... values) {
+		HashMap<String, String> foo = new HashMap<String, String>();
+		if ((values.length % 2) != 0) {
+			throw new IllegalArgumentException();
+		}
+		for (int i = 0; i < values.length; i += 2) {
+			foo.put(values[i], values[i + 1]);
+		}
+		return foo;
+	}
+
+	public static long getCurrentRound() {
+		return currentRound;
+	}
+
+	public static void setCurrentRound(long roundNum) {
+		synchronized (roundMutex) {
+			currentRound = roundNum;
+		}
+	}
+
+	public static void resetRoundCounter() {
+		setCurrentRound(0);
+	}
 }

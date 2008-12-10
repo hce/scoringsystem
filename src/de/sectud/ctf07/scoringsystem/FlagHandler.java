@@ -125,7 +125,7 @@ public class FlagHandler implements Runnable {
 				int flagsPerRound = rs.getInt(5);
 				for (String team : teams) {
 					handlers.add(new ServiceHandler(sID, name, team, script,
-							type, flagsPerRound, startupDelay));
+							type, flagsPerRound, startupDelay, sID));
 					startupDelay += 1250;
 				}
 			}

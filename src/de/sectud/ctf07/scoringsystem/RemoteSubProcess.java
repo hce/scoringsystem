@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Map;
 
 /**
  * Run a subprocesss (Testscript) remotely. Requires the python dexec.py script
@@ -143,10 +144,13 @@ public final class RemoteSubProcess implements SubProcess {
 	 * 
 	 * @see de.sectud.ctf07.scoringsystem.SubProcess#runTestscript(java.lang.String)
 	 */
-	public ServiceStatus runTestscript(String scriptAndParams)
-			throws ExecutionException {
+	public ServiceStatus runTestscript(String scriptAndParams,
+			Map<String, String> env) throws ExecutionException {
 		if (!checked) {
 			check();
+		}
+		for (String key : env.keySet()) {
+			ps.printf("ENV %s %s\n", key, env.get(key));
 		}
 		ps.println(scriptAndParams);
 		String[] msgs;
@@ -156,7 +160,7 @@ public final class RemoteSubProcess implements SubProcess {
 			throw isr();
 		}
 		if (msgs.length != 3) {
-			isr();
+			throw isr();
 		}
 		int retCode; /* retcode is the protocol return code */
 		int retVal; /* retval is the return code of the test script */
@@ -187,26 +191,5 @@ public final class RemoteSubProcess implements SubProcess {
 	 */
 	private ExecutionException isr() {
 		return new ExecutionException("Invalid server response");
-	}
-
-	/**
-	 * test function
-	 * 
-	 * @param args
-	 * @throws UnknownHostException
-	 * @throws IOException
-	 * @throws ExecutionException
-	 */
-	public static void main(String[] args) throws UnknownHostException,
-			IOException, ExecutionException {
-		RemoteSubProcess rsp = new RemoteSubProcess("salato.hcesperer.org",
-				70000, 0);
-		System.out.println(rsp.checkonly());
-		rsp = new RemoteSubProcess("salato.hcesperer.org", 60000, 0);
-		System.out.println(rsp.check());
-		ServiceStatus ss = rsp
-				.runTestscript("ping.py store 130.83.160.1 foo bar");
-		System.out.println(ss.getReturnCode().toString());
-		System.out.println(ss.getStatusMessage());
 	}
 }
