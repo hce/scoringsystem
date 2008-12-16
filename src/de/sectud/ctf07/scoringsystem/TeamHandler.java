@@ -179,6 +179,14 @@ public class TeamHandler {
 		return getValue("team_points_hacking");
 	}
 
+	public boolean setsubnet(String subnet) {
+		return setValue("team_subnet", subnet);
+	}
+
+	public String getsubnet() {
+		return getValueS("team_subnet");
+	}
+
 	protected boolean setValue(String valueName, int points) {
 		Connection connection = DBConnection.getInstance().getDB();
 		try {
@@ -217,6 +225,46 @@ public class TeamHandler {
 			connection = null;
 		}
 		return -1;
+	}
+
+	protected boolean setValue(String valueName, String value) {
+		Connection connection = DBConnection.getInstance().getDB();
+		try {
+			PreparedStatement ps = connection
+					.prepareStatement("update teams set " + valueName
+							+ "=? where uid=?");
+			ps.setString(1, value);
+			ps.setInt(2, teamID);
+			ps.execute();
+			return true;
+		} catch (SQLException e) {
+			writer.println("Error: " + e);
+		} finally {
+			DBConnection.getInstance().returnConnection(connection);
+			connection = null;
+		}
+		return false;
+	}
+
+	protected String getValueS(String valueName) {
+		Connection connection = DBConnection.getInstance().getDB();
+		try {
+			PreparedStatement ps = connection.prepareStatement("select "
+					+ valueName + " from teams where uid=?");
+			ps.setInt(1, teamID);
+			ResultSet rs = ps.executeQuery();
+			if (!rs.next()) {
+				writer.println("Team doesn't exist!?");
+				return null;
+			}
+			return rs.getString(1);
+		} catch (SQLException e) {
+			writer.println("Error: " + e);
+		} finally {
+			DBConnection.getInstance().returnConnection(connection);
+			connection = null;
+		}
+		return null;
 	}
 
 	public String toString() {
