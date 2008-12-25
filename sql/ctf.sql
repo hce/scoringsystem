@@ -10,157 +10,6 @@ SET escape_string_warning = off;
 
 SET search_path = public, pg_catalog;
 
-SET default_tablespace = '';
-
-SET default_with_oids = false;
-
---
--- Name: advisories; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
---
-
-CREATE TABLE advisories (
-    uid bigint NOT NULL,
-    advisory_team character varying(255),
-    advisory_description text DEFAULT ''::text,
-    advisory_status character varying(255),
-    advisory_time bigint,
-    advisory_comment text,
-    advisory_from character varying(255),
-    advisory_generated boolean DEFAULT false
-);
-
-
-ALTER TABLE public.advisories OWNER TO ctf;
-
---
--- Name: flags; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
---
-
-CREATE TABLE flags (
-    uid bigint NOT NULL,
-    flag_name character varying(255),
-    flag_collected boolean,
-    flag_collectingteam character varying(255),
-    flag_team character varying(255),
-    flag_service character varying(255),
-    flag_teamhost character varying(255),
-    flag_disttime bigint,
-    flag_captured boolean DEFAULT false
-);
-
-
-ALTER TABLE public.flags OWNER TO ctf;
-
---
--- Name: flagstats; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
---
-
-CREATE TABLE flagstats (
-    uid bigint NOT NULL,
-    flag_name character varying(255),
-    flag_fromteam character varying(255),
-    flag_collectingteam character varying(255),
-    flag_service character varying(255)
-);
-
-
-ALTER TABLE public.flagstats OWNER TO ctf;
-
---
--- Name: services; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
---
-
-CREATE TABLE services (
-    uid bigint NOT NULL,
-    service_name character varying(255),
-    service_script character varying(255),
-    service_script_type character varying(10) DEFAULT 'adela'::character varying,
-    service_check_interval integer DEFAULT 300,
-    service_flags_per_check integer DEFAULT 5
-);
-
-
-ALTER TABLE public.services OWNER TO ctf;
-
---
--- Name: states; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
---
-
-CREATE TABLE states (
-    uid bigint NOT NULL,
-    status_team character varying(255),
-    status_service character varying(255),
-    status_text character varying(255),
-    status_updated bigint,
-    status_verboseerror character varying(255),
-    status_color character varying(32)
-);
-
-
-ALTER TABLE public.states OWNER TO ctf;
-
---
--- Name: stats_points; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
---
-
-CREATE TABLE stats_points (
-    uid bigint NOT NULL,
-    stats_time bigint,
-    stats_team character varying(255),
-    stats_points_offensive integer,
-    stats_points_defensive integer,
-    stats_points_advisory integer,
-    stats_points_rulecompliance integer
-);
-
-
-ALTER TABLE public.stats_points OWNER TO ctf;
-
---
--- Name: stats_services; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
---
-
-CREATE TABLE stats_services (
-    uid bigint NOT NULL,
-    stats_status character varying(255),
-    stats_statusmsg character varying(255),
-    stats_time bigint,
-    stats_team character varying(255),
-    stats_service character varying(255)
-);
-
-
-ALTER TABLE public.stats_services OWNER TO ctf;
-
---
--- Name: stats_times; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
---
-
-CREATE TABLE stats_times (
-    stats_time bigint NOT NULL
-);
-
-
-ALTER TABLE public.stats_times OWNER TO ctf;
-
---
--- Name: teams; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
---
-
-CREATE TABLE teams (
-    uid bigint NOT NULL,
-    team_name character varying(255),
-    team_points_offensive integer DEFAULT 0,
-    team_points_defensive integer DEFAULT 0,
-    team_points_advisories integer DEFAULT 0,
-    team_points_total integer DEFAULT 0,
-    team_host character varying(255),
-    team_points_hacking integer DEFAULT 0
-);
-
-
-ALTER TABLE public.teams OWNER TO ctf;
-
 --
 -- Name: advisories_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
 --
@@ -176,24 +25,40 @@ CREATE SEQUENCE advisories_uid_seq
 ALTER TABLE public.advisories_uid_seq OWNER TO ctf;
 
 --
--- Name: advisories_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
---
-
-ALTER SEQUENCE advisories_uid_seq OWNED BY advisories.uid;
-
-
---
 -- Name: advisories_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
 SELECT pg_catalog.setval('advisories_uid_seq', 1, false);
 
 
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: advisories; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE advisories (
+    uid bigint DEFAULT nextval('advisories_uid_seq'::regclass) NOT NULL,
+    advisory_team character varying(255),
+    advisory_description text DEFAULT ''::text,
+    advisory_status character varying(255),
+    advisory_time bigint,
+    advisory_comment text,
+    advisory_from character varying(255),
+    advisory_generated boolean DEFAULT false
+);
+
+
+ALTER TABLE public.advisories OWNER TO ctf;
+
 --
 -- Name: flags_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
 --
 
 CREATE SEQUENCE flags_uid_seq
+    START WITH 1
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
@@ -203,24 +68,39 @@ CREATE SEQUENCE flags_uid_seq
 ALTER TABLE public.flags_uid_seq OWNER TO ctf;
 
 --
--- Name: flags_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
---
-
-ALTER SEQUENCE flags_uid_seq OWNED BY flags.uid;
-
-
---
 -- Name: flags_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
-SELECT pg_catalog.setval('flags_uid_seq', 96, true);
+SELECT pg_catalog.setval('flags_uid_seq', 1, false);
 
+
+--
+-- Name: flags; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE flags (
+    uid bigint DEFAULT nextval('flags_uid_seq'::regclass) NOT NULL,
+    flag_name character varying(255),
+    flag_collected boolean,
+    flag_collectingteam character varying(255),
+    flag_team character varying(255),
+    flag_service character varying(255),
+    flag_teamhost character varying(255),
+    flag_disttime bigint,
+    flag_captured boolean DEFAULT false,
+    flag_num integer DEFAULT 0,
+    flag_roundnum bigint DEFAULT 0
+);
+
+
+ALTER TABLE public.flags OWNER TO ctf;
 
 --
 -- Name: flagstats_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
 --
 
 CREATE SEQUENCE flagstats_uid_seq
+    START WITH 1
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
@@ -230,18 +110,26 @@ CREATE SEQUENCE flagstats_uid_seq
 ALTER TABLE public.flagstats_uid_seq OWNER TO ctf;
 
 --
--- Name: flagstats_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
---
-
-ALTER SEQUENCE flagstats_uid_seq OWNED BY flagstats.uid;
-
-
---
 -- Name: flagstats_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
-SELECT pg_catalog.setval('flagstats_uid_seq', 1, true);
+SELECT pg_catalog.setval('flagstats_uid_seq', 1, false);
 
+
+--
+-- Name: flagstats; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE flagstats (
+    uid bigint DEFAULT nextval('flagstats_uid_seq'::regclass) NOT NULL,
+    flag_name character varying(255),
+    flag_fromteam character varying(255),
+    flag_collectingteam character varying(255),
+    flag_service character varying(255)
+);
+
+
+ALTER TABLE public.flagstats OWNER TO ctf;
 
 --
 -- Name: services_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
@@ -258,13 +146,6 @@ CREATE SEQUENCE services_uid_seq
 ALTER TABLE public.services_uid_seq OWNER TO ctf;
 
 --
--- Name: services_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
---
-
-ALTER SEQUENCE services_uid_seq OWNED BY services.uid;
-
-
---
 -- Name: services_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
@@ -272,10 +153,27 @@ SELECT pg_catalog.setval('services_uid_seq', 1, false);
 
 
 --
+-- Name: services; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE services (
+    uid bigint DEFAULT nextval('services_uid_seq'::regclass) NOT NULL,
+    service_name character varying(255),
+    service_script character varying(255),
+    service_script_type character varying(10) DEFAULT 'adela'::character varying,
+    service_check_interval integer DEFAULT 300,
+    service_flags_per_check integer DEFAULT 5
+);
+
+
+ALTER TABLE public.services OWNER TO ctf;
+
+--
 -- Name: states_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
 --
 
 CREATE SEQUENCE states_uid_seq
+    START WITH 1
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
@@ -285,24 +183,35 @@ CREATE SEQUENCE states_uid_seq
 ALTER TABLE public.states_uid_seq OWNER TO ctf;
 
 --
--- Name: states_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
---
-
-ALTER SEQUENCE states_uid_seq OWNED BY states.uid;
-
-
---
 -- Name: states_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
-SELECT pg_catalog.setval('states_uid_seq', 1097, true);
+SELECT pg_catalog.setval('states_uid_seq', 1, false);
 
+
+--
+-- Name: states; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE states (
+    uid bigint DEFAULT nextval('states_uid_seq'::regclass) NOT NULL,
+    status_team character varying(255),
+    status_service character varying(255),
+    status_text character varying(255),
+    status_updated bigint,
+    status_verboseerror character varying(255),
+    status_color character varying(32)
+);
+
+
+ALTER TABLE public.states OWNER TO ctf;
 
 --
 -- Name: stats_points_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
 --
 
 CREATE SEQUENCE stats_points_uid_seq
+    START WITH 1
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
@@ -312,24 +221,35 @@ CREATE SEQUENCE stats_points_uid_seq
 ALTER TABLE public.stats_points_uid_seq OWNER TO ctf;
 
 --
--- Name: stats_points_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
---
-
-ALTER SEQUENCE stats_points_uid_seq OWNED BY stats_points.uid;
-
-
---
 -- Name: stats_points_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
-SELECT pg_catalog.setval('stats_points_uid_seq', 330, true);
+SELECT pg_catalog.setval('stats_points_uid_seq', 1, false);
 
+
+--
+-- Name: stats_points; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE stats_points (
+    uid bigint DEFAULT nextval('stats_points_uid_seq'::regclass) NOT NULL,
+    stats_time bigint,
+    stats_team character varying(255),
+    stats_points_offensive integer,
+    stats_points_defensive integer,
+    stats_points_advisory integer,
+    stats_points_rulecompliance integer
+);
+
+
+ALTER TABLE public.stats_points OWNER TO ctf;
 
 --
 -- Name: stats_services_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
 --
 
 CREATE SEQUENCE stats_services_uid_seq
+    START WITH 1
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
@@ -339,18 +259,40 @@ CREATE SEQUENCE stats_services_uid_seq
 ALTER TABLE public.stats_services_uid_seq OWNER TO ctf;
 
 --
--- Name: stats_services_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
---
-
-ALTER SEQUENCE stats_services_uid_seq OWNED BY stats_services.uid;
-
-
---
 -- Name: stats_services_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
-SELECT pg_catalog.setval('stats_services_uid_seq', 856, true);
+SELECT pg_catalog.setval('stats_services_uid_seq', 1, false);
 
+
+--
+-- Name: stats_services; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE stats_services (
+    uid bigint DEFAULT nextval('stats_services_uid_seq'::regclass) NOT NULL,
+    stats_status character varying(255),
+    stats_statusmsg character varying(255),
+    stats_time bigint,
+    stats_team character varying(255),
+    stats_service character varying(255)
+);
+
+
+ALTER TABLE public.stats_services OWNER TO ctf;
+
+--
+-- Name: stats_times; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
+--
+
+CREATE TABLE stats_times (
+    stats_time bigint NOT NULL,
+    time_type character varying(256),
+    time_event_data character varying(256)
+);
+
+
+ALTER TABLE public.stats_times OWNER TO ctf;
 
 --
 -- Name: teams_uid_seq; Type: SEQUENCE; Schema: public; Owner: ctf
@@ -367,13 +309,6 @@ CREATE SEQUENCE teams_uid_seq
 ALTER TABLE public.teams_uid_seq OWNER TO ctf;
 
 --
--- Name: teams_uid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ctf
---
-
-ALTER SEQUENCE teams_uid_seq OWNED BY teams.uid;
-
-
---
 -- Name: teams_uid_seq; Type: SEQUENCE SET; Schema: public; Owner: ctf
 --
 
@@ -381,60 +316,23 @@ SELECT pg_catalog.setval('teams_uid_seq', 1, false);
 
 
 --
--- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
+-- Name: teams; Type: TABLE; Schema: public; Owner: ctf; Tablespace: 
 --
 
-ALTER TABLE advisories ALTER COLUMN uid SET DEFAULT nextval('advisories_uid_seq'::regclass);
+CREATE TABLE teams (
+    uid bigint DEFAULT nextval('teams_uid_seq'::regclass) NOT NULL,
+    team_name character varying(255),
+    team_points_offensive integer DEFAULT 0,
+    team_points_defensive integer DEFAULT 0,
+    team_points_advisories integer DEFAULT 0,
+    team_points_total integer DEFAULT 0,
+    team_host character varying(255),
+    team_points_hacking integer DEFAULT 0,
+    team_subnet character varying(256)
+);
 
 
---
--- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
---
-
-ALTER TABLE flags ALTER COLUMN uid SET DEFAULT nextval('flags_uid_seq'::regclass);
-
-
---
--- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
---
-
-ALTER TABLE flagstats ALTER COLUMN uid SET DEFAULT nextval('flagstats_uid_seq'::regclass);
-
-
---
--- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
---
-
-ALTER TABLE services ALTER COLUMN uid SET DEFAULT nextval('services_uid_seq'::regclass);
-
-
---
--- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
---
-
-ALTER TABLE states ALTER COLUMN uid SET DEFAULT nextval('states_uid_seq'::regclass);
-
-
---
--- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
---
-
-ALTER TABLE stats_points ALTER COLUMN uid SET DEFAULT nextval('stats_points_uid_seq'::regclass);
-
-
---
--- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
---
-
-ALTER TABLE stats_services ALTER COLUMN uid SET DEFAULT nextval('stats_services_uid_seq'::regclass);
-
-
---
--- Name: uid; Type: DEFAULT; Schema: public; Owner: ctf
---
-
-ALTER TABLE teams ALTER COLUMN uid SET DEFAULT nextval('teams_uid_seq'::regclass);
-
+ALTER TABLE public.teams OWNER TO ctf;
 
 --
 -- Data for Name: advisories; Type: TABLE DATA; Schema: public; Owner: ctf
@@ -448,7 +346,7 @@ COPY advisories (uid, advisory_team, advisory_description, advisory_status, advi
 -- Data for Name: flags; Type: TABLE DATA; Schema: public; Owner: ctf
 --
 
-COPY flags (uid, flag_name, flag_collected, flag_collectingteam, flag_team, flag_service, flag_teamhost, flag_disttime, flag_captured) FROM stdin;
+COPY flags (uid, flag_name, flag_collected, flag_collectingteam, flag_team, flag_service, flag_teamhost, flag_disttime, flag_captured, flag_num, flag_roundnum) FROM stdin;
 \.
 
 
@@ -496,7 +394,7 @@ COPY stats_services (uid, stats_status, stats_statusmsg, stats_time, stats_team,
 -- Data for Name: stats_times; Type: TABLE DATA; Schema: public; Owner: ctf
 --
 
-COPY stats_times (stats_time) FROM stdin;
+COPY stats_times (stats_time, time_type, time_event_data) FROM stdin;
 \.
 
 
@@ -504,7 +402,7 @@ COPY stats_times (stats_time) FROM stdin;
 -- Data for Name: teams; Type: TABLE DATA; Schema: public; Owner: ctf
 --
 
-COPY teams (uid, team_name, team_points_offensive, team_points_defensive, team_points_advisories, team_points_total, team_host, team_points_hacking) FROM stdin;
+COPY teams (uid, team_name, team_points_offensive, team_points_defensive, team_points_advisories, team_points_total, team_host, team_points_hacking, team_subnet) FROM stdin;
 \.
 
 
