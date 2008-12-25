@@ -631,6 +631,7 @@ public class WebpageGenerator implements Runnable {
 		try {
 			ps.setLong(1, curTime);
 			ps.execute();
+		} catch (SQLException e) { // we can ignore this one
 		} finally {
 			ps.close();
 		}
