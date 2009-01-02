@@ -71,6 +71,7 @@ class SocketHandler(threading.Thread):
             return
         try:
             self.handle(nr)
+            self.cs.close()
         except DieException, de:
             self.cs.sendall("%s\n" % de.message)
             self.cs.close()
@@ -156,16 +157,18 @@ class DExec:
         s = mksock()
         s.bind(self.address)
         s.listen(2)
-        while not self.dostop:
-            try: cs, addr = s.accept()
-            except Exception, e:
-                sys.stderr.write("Error trying to accept a connection: %s\n" % e)
-                continue
-            if not self.isauthed(addr):
-                sys.stderr.write("Peer %s is not authorized to connect\n" % repr(addr))
-                CloseHandler(cs, addr).start()
-                continue
-            SocketHandler(cs, addr, self.scripts, self.scriptpath, self).start()
+        try:
+            while not self.dostop:
+                try: cs, addr = s.accept()
+                except Exception, e:
+                    sys.stderr.write("Error trying to accept a connection: %s\n" % e)
+                    continue
+                if not self.isauthed(addr):
+                    sys.stderr.write("Peer %s is not authorized to connect\n" % repr(addr))
+                    CloseHandler(cs, addr).start()
+                    continue
+                SocketHandler(cs, addr, self.scripts, self.scriptpath, self).start()
+        finally: s.close()
 
 
 if __name__ == '__main__':
