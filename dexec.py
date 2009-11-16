@@ -11,9 +11,11 @@ CHILDTIMEOUT = 60
 class EOFException(Exception): pass
 class LineReader:
     buf = ''
+
     def __init__(self, socket, CANCELAT):
         self.s = socket
         self.CANCELAT = CANCELAT
+
     def readline(self):
         while True:
             pos = self.buf.find("\n")
@@ -26,8 +28,10 @@ class LineReader:
                 except: pass
                 return ''
             frag = self.s.recv(8192)
-            if frag == None: raise EOFException()
-            if len(frag) == 0: raise EOFException()
+            if frag == None:
+                raise EOFException()
+            if len(frag) == 0:
+                raise EOFException()
             frag = frag.replace("\r", "")
             if len(frag) == 0:
                 buf, self.buf = self.buf, ''
@@ -50,11 +54,14 @@ class CloseHandler(threading.Thread):
         threading.Thread.__init__(self)
         self.cs = cs
         self.addr = addr
+
     def run(self):
         self.cs.sendall("400 You are not authorized to connect\n")
         self.cs.close()
 
-class DieException(Exception): pass
+class DieException(Exception):
+    pass
+
 class SocketHandler(threading.Thread):
     def __init__(self, cs, addr, allowedscripts, scriptpath, statuscallback):
         threading.Thread.__init__(self)
@@ -63,6 +70,7 @@ class SocketHandler(threading.Thread):
         self.allowedscripts = allowedscripts
         self.scriptpath = "scripts/"
         self.statuscallback = statuscallback
+
     def run(self):
         nr = self.statuscallback.incrunning()
         if nr == -1:
@@ -76,8 +84,10 @@ class SocketHandler(threading.Thread):
             self.cs.sendall("%s\n" % de.message)
             self.cs.close()
         finally: self.statuscallback.decrunning()
+
     def die(self, reason):
         raise DieException(reason)
+
     def handle(self, nr):
         try: self.cs.settimeout(60)
         except: return    # If we can't set a timeout, return
@@ -95,24 +105,32 @@ class SocketHandler(threading.Thread):
                 env['CTFGAME_' + key] = value
             else: break
         cmd = cmdline[0]
-        if cmd not in self.allowedscripts: self.die("400 Invalid script specified")
+        if cmd not in self.allowedscripts:
+            self.die("400 Invalid script specified")
         parms = cmdline[1].split(" ")
         self.runscript(cmd, parms, env)
+
     def runscript(self, cmd, parms, env):
         lendtime = time.time() + CHILDTIMEOUT
         cmdlist = ['./' + cmd] + parms
         print "[FORK] %s" % " ".join(cmdlist)
-        try: process = subprocess.Popen(cmdlist, stdout=subprocess.PIPE, cwd=self.scriptpath, env=env, close_fds=True)
+        try:
+            process = subprocess.Popen(cmdlist, \
+                    stdout=subprocess.PIPE, cwd=self.scriptpath, \
+                    env=env, close_fds=True)
         except Exception, e:
             print "[e] %s" % e
             self.die("500 %s" % e)
         print "[%d] launched" % process.pid
         while True:
             time.sleep(1)
-            if time.time() > lendtime: break
+            if time.time() > lendtime:
+                break
             status = process.poll()
-            if status == None: continue
-            if status == -1: continue
+            if status == None:
+                continue
+            if status == -1:
+                continue
             if status < 0:
                 message = "Testscript was killed by signal %d" % status
                 status = 13 # timeout
@@ -121,11 +139,15 @@ class SocketHandler(threading.Thread):
             process.stdout.close()
             print "[%d] %d %s" % (process.pid, status, message)
             self.die("600 %d %s" % (status, message))
-        try: os.kill(process.pid, 15)
-        except: pass
+        try:
+            os.kill(process.pid, 15)
+        except:
+            pass
         time.sleep(1)
-        try: os.kill(process.pid, 9)
-        except: pass
+        try:
+            os.kill(process.pid, 9)
+        except:
+            pass
         self.die("600 13 Service timeout")  # 13: service respone timeout
         
 
@@ -137,8 +159,10 @@ class DExec:
         self.mylock = threading.Lock()
         self.running = 0
         self.scriptpath = "scripts/"
-        self.scripts = [i for i in os.listdir(self.scriptpath) if not i.startswith(".")]
+        self.scripts = [i for i in os.listdir(self.scriptpath) \
+                if not i.startswith(".")]
         self.dostop = False
+
     def incrunning(self, by=1):
         self.mylock.acquire_lock()
         if (self.running + by) > self.maxprocs:
@@ -148,18 +172,24 @@ class DExec:
             running = self.running
         self.mylock.release_lock()
         return running
+
     def decrunning(self):
         return self.incrunning(-1)
-    def getrunning(self): return self.running
+
+    def getrunning(self):
+        return self.running
+
     def isauthed(self, addr):
         return addr[0] in self.allowedips
+
     def run(self):
         s = mksock()
         s.bind(self.address)
         s.listen(2)
         try:
             while not self.dostop:
-                try: cs, addr = s.accept()
+                try:
+                    cs, addr = s.accept()
                 except Exception, e:
                     sys.stderr.write("Error trying to accept a connection: %s\n" % e)
                     continue
@@ -168,16 +198,22 @@ class DExec:
                     CloseHandler(cs, addr).start()
                     continue
                 SocketHandler(cs, addr, self.scripts, self.scriptpath, self).start()
-        finally: s.close()
+        finally:
+            s.close()
 
 
 if __name__ == '__main__':
     argv = sys.argv
-    try: maxprocs = int(argv[1])
-    except: usage()
-    try: ips = argv[2:]
-    except: usage()
-    if len(ips) < 1: usage()
+    try:
+        maxprocs = int(argv[1])
+    except:
+        usage()
+    try:
+        ips = argv[2:]
+    except:
+        usage()
+    if len(ips) < 1:
+        usage()
     bindaddr = ('0.0.0.0', 1723)
     dx = DExec(maxprocs, ips, bindaddr)
     dx.run()
