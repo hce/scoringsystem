@@ -716,6 +716,10 @@ public class ClientHandler extends Thread implements IFunctionCallback {
 					}
 				}
 				return true;
+			case cls:
+				break;
+			default:
+				break;
 			}
 		} catch (Exception e) {
 			writer.println("Error: " + e.getMessage());

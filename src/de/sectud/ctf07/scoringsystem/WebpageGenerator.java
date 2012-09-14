@@ -525,6 +525,7 @@ public class WebpageGenerator implements Runnable {
 					s_p.print(HTMLFilter.filter((comment != null) ? comment
 							: ""));
 					s_p.print("</td></tr>");
+					s_p.close();
 				}
 			} finally {
 				rs.close();

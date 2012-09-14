@@ -73,19 +73,28 @@ public class DJBSettings {
 	}
 
 	public static String readLine(String fn, int max_chars) {
+		BufferedReader br = null;
 		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(
+			br = new BufferedReader(new InputStreamReader(
 					new FileInputStream(fn)));
 			return br.readLine();
 		} catch (Throwable t) {
 			return null;
+		} finally {
+			if (br != null)
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 		}
 	}
 
 	public static String readText(String fn, int max_chars) {
+		BufferedReader br = null;
 		try {
 			StringBuilder sb = new StringBuilder(MAX_CHARS_TO_READ_TEXT);
-			BufferedReader br = new BufferedReader(new InputStreamReader(
+			br = new BufferedReader(new InputStreamReader(
 					new FileInputStream(fn)));
 			while (br.ready()) {
 				sb.append(br.readLine());
@@ -94,6 +103,13 @@ public class DJBSettings {
 			return sb.toString();
 		} catch (Throwable t) {
 			return null;
+		} finally {
+			if (br != null)
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}			
 		}
 	}
 

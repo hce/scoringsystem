@@ -175,7 +175,6 @@ public class DBConnection implements ConnectionPool {
         }
 	}
 
-	@SuppressWarnings("unchecked")
 	private void putConn(Connection c) {
 		for (int i = 0; i < this.connections.length; i++) {
 			if (this.connections[i].set(c)) {
